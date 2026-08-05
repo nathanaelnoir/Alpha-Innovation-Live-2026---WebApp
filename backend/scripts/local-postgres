@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backend_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+postgres_bin="${backend_dir}/.postgres/runtime/usr/lib/postgresql/18/bin"
+postgres_lib="${backend_dir}/.postgres/runtime/usr/lib/x86_64-linux-gnu"
+data_dir="${backend_dir}/.pgdata"
+socket_dir="${backend_dir}/.postgres/socket"
+log_file="${backend_dir}/.postgres/postgres.log"
+port="55432"
+
+if [[ ! -x "${postgres_bin}/pg_ctl" ]]; then
+    echo "Local PostgreSQL runtime is not installed in backend/.postgres." >&2
+    exit 1
+fi
+
+export LD_LIBRARY_PATH="${postgres_lib}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+case "${1:-status}" in
+    start)
+        mkdir -p "${socket_dir}"
+        "${postgres_bin}/pg_ctl" \
+            --pgdata="${data_dir}" \
+            --log="${log_file}" \
+            --options="-k ${socket_dir} -p ${port} -h 127.0.0.1" \
+            --wait start
+        ;;
+    stop)
+        "${postgres_bin}/pg_ctl" --pgdata="${data_dir}" --wait stop
+        ;;
+    status)
+        "${postgres_bin}/pg_ctl" --pgdata="${data_dir}" status
+        ;;
+    *)
+        echo "Usage: scripts/local-postgres {start|stop|status}" >&2
+        exit 2
+        ;;
+esac
