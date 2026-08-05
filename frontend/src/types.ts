@@ -27,3 +27,19 @@ export interface ResponseAccepted extends Coordinate {
   response_id: string
   question_id: string
 }
+
+export interface AdminSession {
+  id: string
+  current_run_id: string
+  title: string
+  is_open: boolean
+  question_count: number
+  created_at: string
+  opened_at: string | null
+  closed_at: string | null
+}
+
+export interface AdminQuestion extends ActiveQuestion {
+  session_id: string
+  is_active: boolean
+}

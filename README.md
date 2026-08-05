@@ -111,6 +111,13 @@ curl -X PUT http://localhost:8000/api/v1/sessions/SESSION_ID/close \
 Questions cannot be added while their session is open, and an empty session
 cannot be opened. Opening one session atomically closes any previous session.
 
+### Organizer dashboard
+
+Open `/admin` on the frontend origin and enter `RESULTS_EXPORT_TOKEN`. The token
+is held only in the current page's memory. The dashboard can create sessions,
+add ordered questions to closed sessions, open or close sessions, refresh state,
+and download the protected CSV export.
+
 ### Backend setup
 
 Python 3.12 or newer and PostgreSQL are required.

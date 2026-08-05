@@ -1,5 +1,7 @@
 import type {
   ActiveSurveySession,
+  AdminQuestion,
+  AdminSession,
   Coordinate,
   ParticipantIdentity,
   ResponseAccepted,
@@ -33,7 +35,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
   let response: Response
   try {
     response = await fetch(`${apiBaseUrl}${path}`, init)
@@ -56,7 +58,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     )
   }
 
+  return response
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetchApi(path, init)
   return (await response.json()) as T
+}
+
+function organizerHeaders(token: string, json = false): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+  }
 }
 
 export async function createParticipant(signal?: AbortSignal): Promise<ParticipantIdentity> {
@@ -89,4 +103,66 @@ export function submitResponse(
     body: JSON.stringify(coordinate),
     signal,
   })
+}
+
+export function listAdminSessions(token: string): Promise<AdminSession[]> {
+  return request<AdminSession[]>('/api/v1/sessions', {
+    headers: organizerHeaders(token),
+  })
+}
+
+export function listAdminQuestions(token: string): Promise<AdminQuestion[]> {
+  return request<AdminQuestion[]>('/api/v1/questions', {
+    headers: organizerHeaders(token),
+  })
+}
+
+export function createAdminSession(
+  token: string,
+  title: string,
+): Promise<AdminSession> {
+  return request<AdminSession>('/api/v1/sessions', {
+    method: 'POST',
+    headers: organizerHeaders(token, true),
+    body: JSON.stringify({ title }),
+  })
+}
+
+export function setAdminSessionOpen(
+  token: string,
+  sessionId: string,
+  open: boolean,
+): Promise<AdminSession> {
+  return request<AdminSession>(
+    `/api/v1/sessions/${sessionId}/${open ? 'open' : 'close'}`,
+    { method: 'PUT', headers: organizerHeaders(token) },
+  )
+}
+
+export function createAdminQuestion(
+  token: string,
+  question: {
+    session_id: string
+    prompt: string
+    x_axis_label: string | null
+    y_axis_label: string | null
+  },
+): Promise<AdminQuestion> {
+  return request<AdminQuestion>('/api/v1/questions', {
+    method: 'POST',
+    headers: organizerHeaders(token, true),
+    body: JSON.stringify(question),
+  })
+}
+
+export async function downloadAdminResults(token: string): Promise<void> {
+  const response = await fetchApi('/api/v1/results.csv', {
+    headers: organizerHeaders(token),
+  })
+  const blobUrl = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = 'conference-survey-results.csv'
+  link.click()
+  URL.revokeObjectURL(blobUrl)
 }
