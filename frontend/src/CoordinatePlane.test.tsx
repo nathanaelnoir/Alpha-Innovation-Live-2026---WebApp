@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { CoordinatePlane } from './CoordinatePlane'
 
@@ -14,6 +14,11 @@ describe('CoordinatePlane', () => {
       />,
     )
     expect(screen.getByTestId('quadrant-guides')).toBeInTheDocument()
+    const scale = within(screen.getByTestId('coordinate-scale'))
+    expect(scale.getByText('X/0%')).toBeInTheDocument()
+    expect(scale.getByText('X/100%')).toBeInTheDocument()
+    expect(scale.getByText('Y/0%')).toBeInTheDocument()
+    expect(scale.getByText('Y/100%')).toBeInTheDocument()
     const surface = screen.getByTestId('coordinate-surface')
     vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue({
       left: 10,

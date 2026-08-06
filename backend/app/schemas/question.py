@@ -11,6 +11,12 @@ class QuestionCreate(BaseModel):
                 "prompt": "How valuable was this session?",
                 "x_axis_label": "Not valuable",
                 "y_axis_label": "Very valuable",
+                "prompt_de": "Wie wertvoll war diese Sitzung?",
+                "x_axis_label_de": "Nicht wertvoll",
+                "y_axis_label_de": "Sehr wertvoll",
+                "prompt_it": "Quanto è stata utile questa sessione?",
+                "x_axis_label_it": "Per niente utile",
+                "y_axis_label_it": "Molto utile",
             }
         }
     )
@@ -20,6 +26,12 @@ class QuestionCreate(BaseModel):
     prompt: str = Field(min_length=1, max_length=1000)
     x_axis_label: str | None = Field(default=None, max_length=200)
     y_axis_label: str | None = Field(default=None, max_length=200)
+    prompt_de: str | None = Field(default=None, max_length=1000)
+    x_axis_label_de: str | None = Field(default=None, max_length=200)
+    y_axis_label_de: str | None = Field(default=None, max_length=200)
+    prompt_it: str | None = Field(default=None, max_length=1000)
+    x_axis_label_it: str | None = Field(default=None, max_length=200)
+    y_axis_label_it: str | None = Field(default=None, max_length=200)
 
     @field_validator("prompt")
     @classmethod
@@ -29,7 +41,21 @@ class QuestionCreate(BaseModel):
             raise ValueError("prompt must not be blank")
         return stripped
 
-    @field_validator("x_axis_label", "y_axis_label")
+    @field_validator("prompt_de", "prompt_it")
+    @classmethod
+    def strip_optional_prompt(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return value.strip() or None
+
+    @field_validator(
+        "x_axis_label",
+        "y_axis_label",
+        "x_axis_label_de",
+        "y_axis_label_de",
+        "x_axis_label_it",
+        "y_axis_label_it",
+    )
     @classmethod
     def strip_optional_label(cls, value: str | None) -> str | None:
         if value is None:
@@ -44,6 +70,12 @@ class QuestionAdminView(BaseModel):
     prompt: str = Field(description="Question displayed to participants.")
     x_axis_label: str | None
     y_axis_label: str | None
+    prompt_de: str | None
+    x_axis_label_de: str | None
+    y_axis_label_de: str | None
+    prompt_it: str | None
+    x_axis_label_it: str | None
+    y_axis_label_it: str | None
     is_active: bool = Field(description="Whether this question accepts responses.")
 
 
@@ -55,6 +87,12 @@ class ActiveQuestion(BaseModel):
                 "prompt": "How useful was this session?",
                 "x_axis_label": "Not useful",
                 "y_axis_label": "Very useful",
+                "prompt_de": "Wie nützlich war diese Sitzung?",
+                "x_axis_label_de": "Nicht nützlich",
+                "y_axis_label_de": "Sehr nützlich",
+                "prompt_it": "Quanto è stata utile questa sessione?",
+                "x_axis_label_it": "Per niente utile",
+                "y_axis_label_it": "Molto utile",
             }
         }
     )
@@ -68,3 +106,11 @@ class ActiveQuestion(BaseModel):
     y_axis_label: str | None = Field(
         description="Optional label describing the vertical axis."
     )
+    prompt_de: str | None = Field(description="Optional German question text.")
+    x_axis_label_de: str | None = Field(description="Optional German horizontal label.")
+    y_axis_label_de: str | None = Field(description="Optional German vertical label.")
+    prompt_it: str | None = Field(description="Optional Italian question text.")
+    x_axis_label_it: str | None = Field(
+        description="Optional Italian horizontal label."
+    )
+    y_axis_label_it: str | None = Field(description="Optional Italian vertical label.")

@@ -45,6 +45,13 @@ async def test_migrations_and_initial_seed_are_present(
     assert revision == "20260805_0006"
     assert active_question.id == INITIAL_QUESTION_ID
     assert active_question.prompt == "How are you experiencing this session right now?"
+    assert active_question.prompt_de == "Wie erleben Sie diese Sitzung gerade?"
+    assert (
+        active_question.prompt_it
+        == "Come sta vivendo questa sessione in questo momento?"
+    )
+    assert active_question.x_axis_label_de == "Engagement (niedrig bis hoch)"
+    assert active_question.y_axis_label_it == "Comprensione (bassa-alta)"
     assert active_session.questions
     async with db_session.begin():
         active_question_count = await db_session.scalar(
@@ -117,6 +124,12 @@ async def test_opening_session_activates_its_ordered_questions(
             prompt="Where are you on the four-quadrant plane?",
             x_axis_label="Engagement (low to high)",
             y_axis_label="Understanding (low to high)",
+            prompt_de="Wo befinden Sie sich im Vier-Quadranten-Feld?",
+            x_axis_label_de="Engagement (niedrig bis hoch)",
+            y_axis_label_de="Verständnis (niedrig bis hoch)",
+            prompt_it="Dove si trova nel piano a quattro quadranti?",
+            x_axis_label_it="Coinvolgimento (basso-alto)",
+            y_axis_label_it="Comprensione (bassa-alta)",
         ),
     )
 

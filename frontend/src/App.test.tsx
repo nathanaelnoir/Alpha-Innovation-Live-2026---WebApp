@@ -25,6 +25,12 @@ const question = {
   prompt: 'How are you experiencing this session right now?',
   x_axis_label: 'Engagement (low to high)',
   y_axis_label: 'Understanding (low to high)',
+  prompt_de: 'Wie erleben Sie diese Sitzung gerade?',
+  x_axis_label_de: 'Engagement (niedrig bis hoch)',
+  y_axis_label_de: 'Verständnis (niedrig bis hoch)',
+  prompt_it: 'Come sta vivendo questa sessione in questo momento?',
+  x_axis_label_it: 'Coinvolgimento (basso-alto)',
+  y_axis_label_it: 'Comprensione (bassa-alta)',
 }
 const surveySession: ActiveSurveySession = {
   id: 'session-1',
@@ -76,9 +82,22 @@ describe('App', () => {
     window.localStorage.clear()
   })
 
+  it('shows the minimal monochrome stream while loading', () => {
+    mockedCreateParticipant.mockReturnValue(new Promise(() => undefined))
+
+    render(<App />)
+
+    expect(screen.getByTestId('loading-stream')).toBeInTheDocument()
+    expect(screen.getByText('LOADING…')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading the question… This will only take a moment.',
+    )
+    expect(screen.queryByRole('heading', { name: 'Loading the question…' })).not.toBeInTheDocument()
+  })
+
   it('creates and persists a pseudonymous participant while loading the session', async () => {
     await renderReadyApp()
-    expect(screen.getByTestId('question-signal-line')).toBeInTheDocument()
+    expect(screen.queryByTestId('question-signal-line')).not.toBeInTheDocument()
     expect(mockedCreateParticipant).toHaveBeenCalledOnce()
     expect(mockedGetActiveSession).toHaveBeenCalledOnce()
     expect(window.localStorage.getItem('conference-survey-participant-v1')).toContain(
@@ -97,12 +116,17 @@ describe('App', () => {
 
     expect(sendButton).toBeDisabled()
     expect(screen.getByText('Saving your response…')).toBeInTheDocument()
-    expect(screen.queryByText('Data transmission completed')).not.toBeInTheDocument()
+    expect(screen.queryByText('All responses submitted')).not.toBeInTheDocument()
 
     await act(async () => pending.resolve(accepted))
-    expect(
-      await screen.findByRole('heading', { name: 'Data transmission completed' }),
-    ).toBeInTheDocument()
+    const completionHeading = await screen.findByRole('heading', {
+      name: 'All responses submitted',
+    })
+    expect(completionHeading).toBeInTheDocument()
+    expect(completionHeading.closest('.survey-card')).toHaveClass('survey-card--completed')
+    expect(screen.getByText('OTHER RESPONSES')).toBeInTheDocument()
+    expect(screen.getByText('YOUR RESPONSE')).toBeInTheDocument()
+    expect(screen.getByText('COMPLETED')).toBeInTheDocument()
     expect(screen.getByText(/Opening session/)).toBeInTheDocument()
     expect(window.localStorage.getItem('conference-survey-session-progress-v1')).toContain(
       question.id,
@@ -129,7 +153,7 @@ describe('App', () => {
     expect(
       await screen.findByRole('heading', { name: secondQuestion.prompt }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Data transmission completed')).not.toBeInTheDocument()
+    expect(screen.queryByText('All responses submitted')).not.toBeInTheDocument()
 
     const storedProgress = window.localStorage.getItem(
       'conference-survey-session-progress-v1',
@@ -149,12 +173,12 @@ describe('App', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Send response' }))
     expect(
-      await screen.findByText('The response could not be saved. Please try again.'),
+      await screen.findByText('Your response could not be saved. Please try again.'),
     ).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try sending again' }))
     expect(
-      await screen.findByRole('heading', { name: 'Data transmission completed' }),
+      await screen.findByRole('heading', { name: 'All responses submitted' }),
     ).toBeInTheDocument()
     expect(mockedSubmitResponse).toHaveBeenCalledTimes(2)
   })
@@ -172,5 +196,27 @@ describe('App', () => {
     mockedGetActiveSession.mockResolvedValueOnce(surveySession)
     await userEvent.click(screen.getByRole('button', { name: 'Check again' }))
     expect(await screen.findByRole('heading', { name: question.prompt })).toBeInTheDocument()
+  })
+
+  it('switches question, labels, interface text, and language preference', async () => {
+    await renderReadyApp()
+
+    await userEvent.click(screen.getByRole('button', { name: 'DE' }))
+
+    expect(
+      await screen.findByRole('heading', { name: question.prompt_de }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Verständnis')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Antwort senden' })).toBeInTheDocument()
+    expect(screen.getByText('Es werden weder Namen noch Kontaktdaten erfasst.')).toBeInTheDocument()
+    expect(document.documentElement.lang).toBe('de')
+    expect(window.localStorage.getItem('conference-survey-language-v1')).toBe('de')
+
+    await userEvent.click(screen.getByRole('button', { name: 'IT' }))
+    expect(
+      await screen.findByRole('heading', { name: question.prompt_it }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Comprensione')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Invia risposta' })).toBeInTheDocument()
   })
 })

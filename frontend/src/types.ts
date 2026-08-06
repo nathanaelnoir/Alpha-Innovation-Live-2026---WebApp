@@ -4,6 +4,12 @@ export interface ActiveQuestion {
   prompt: string
   x_axis_label: string | null
   y_axis_label: string | null
+  prompt_de: string | null
+  x_axis_label_de: string | null
+  y_axis_label_de: string | null
+  prompt_it: string | null
+  x_axis_label_it: string | null
+  y_axis_label_it: string | null
 }
 
 export interface ActiveSurveySession {

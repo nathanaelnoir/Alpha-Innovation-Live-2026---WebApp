@@ -33,6 +33,12 @@ def make_question(*, active: bool = False) -> Question:
         prompt="How valuable was this session?",
         x_axis_label="Not valuable",
         y_axis_label="Very valuable",
+        prompt_de="Wie wertvoll war diese Sitzung?",
+        x_axis_label_de="Nicht wertvoll",
+        y_axis_label_de="Sehr wertvoll",
+        prompt_it="Quanto è stata utile questa sessione?",
+        x_axis_label_it="Per niente utile",
+        y_axis_label_it="Molto utile",
         is_active=active,
     )
 
@@ -56,11 +62,17 @@ def test_question_input_is_trimmed_and_blank_labels_become_null() -> None:
         prompt="  How valuable was this session?  ",
         x_axis_label="   ",
         y_axis_label="  Very valuable  ",
+        prompt_de="  Wie wertvoll war diese Sitzung?  ",
+        x_axis_label_de="   ",
+        prompt_it="   ",
     )
 
     assert question.prompt == "How valuable was this session?"
     assert question.x_axis_label is None
     assert question.y_axis_label == "Very valuable"
+    assert question.prompt_de == "Wie wertvoll war diese Sitzung?"
+    assert question.x_axis_label_de is None
+    assert question.prompt_it is None
 
 
 @pytest.mark.asyncio
@@ -68,13 +80,20 @@ async def test_create_question_service_stores_question_inactive() -> None:
     session = make_session()
     survey_session = SurveySession(id=SESSION_ID, title="Opening", is_open=False)
     session.execute.side_effect = [scalar_result(survey_session), scalar_result(1)]
-    question_data = QuestionCreate(session_id=SESSION_ID, prompt="A new question")
+    question_data = QuestionCreate(
+        session_id=SESSION_ID,
+        prompt="A new question",
+        prompt_de="Eine neue Frage",
+        prompt_it="Una nuova domanda",
+    )
 
     result = await create_question(session, question_data)
 
     stored_question = session.add.call_args.args[0]
     assert isinstance(stored_question, Question)
     assert stored_question.prompt == "A new question"
+    assert stored_question.prompt_de == "Eine neue Frage"
+    assert stored_question.prompt_it == "Una nuova domanda"
     assert stored_question.session_id == SESSION_ID
     assert stored_question.position == 1
     assert stored_question.is_active is False
@@ -147,11 +166,19 @@ async def test_organizer_can_create_question() -> None:
             "prompt": "How confident do you feel?",
             "x_axis_label": "Not confident",
             "y_axis_label": "Very confident",
+            "prompt_de": "Wie sicher fühlen Sie sich?",
+            "x_axis_label_de": "Nicht sicher",
+            "y_axis_label_de": "Sehr sicher",
+            "prompt_it": "Quanto si sente sicuro?",
+            "x_axis_label_it": "Per niente sicuro",
+            "y_axis_label_it": "Molto sicuro",
         },
     )
 
     assert response.status_code == 201
     assert response.json()["prompt"] == "How confident do you feel?"
+    assert response.json()["prompt_de"] == "Wie sicher fühlen Sie sich?"
+    assert response.json()["prompt_it"] == "Quanto si sente sicuro?"
     assert response.json()["is_active"] is False
 
 

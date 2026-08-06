@@ -33,3 +33,11 @@ def test_response_constraints_and_indexes_are_present() -> None:
     assert "ix_responses_question_id" in index_names
     assert any(isinstance(item, CheckConstraint) for item in table.constraints)
     assert any(isinstance(item, UniqueConstraint) for item in table.constraints)
+
+
+def test_question_translation_constraints_are_present() -> None:
+    table = cast(Table, Question.__table__)
+    constraint_names = {constraint.name for constraint in table.constraints}
+
+    assert "ck_questions_prompt_de_not_blank" in constraint_names
+    assert "ck_questions_prompt_it_not_blank" in constraint_names

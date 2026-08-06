@@ -2,6 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, createParticipant, getActiveSession, submitResponse } from './api'
 import { CoordinatePlane } from './CoordinatePlane'
 import { loadParticipantIdentity, saveParticipantIdentity } from './identity'
+import {
+  copy,
+  languages,
+  loadLanguage,
+  localizeQuestion,
+  saveLanguage,
+  type Language,
+} from './i18n'
 import { loadCompletedQuestions, markQuestionCompleted } from './sessionProgress'
 import { ResponseStream } from './ResponseStream'
 import { WaitingParticles } from './WaitingParticles'
@@ -14,22 +22,19 @@ import type {
 
 type LoadState = 'loading' | 'ready' | 'completed' | 'empty' | 'error'
 type SubmitState = 'idle' | 'selected' | 'submitting' | 'error'
+type MessageKey = '' | 'loadError' | 'responseError'
 
 const ACTIVE_POLL_INTERVAL_MS = 5_000
 const WAITING_POLL_INTERVAL_MS = 15_000
 const POLL_JITTER_MS = 2_000
-
-function friendlyError(error: unknown): string {
-  return error instanceof ApiError
-    ? error.message
-    : 'Something went wrong. Please try again.'
-}
 
 function readableAxisLabel(label: string | null, fallback: string): string {
   return label?.replace(/\s*\([^)]*\)/g, '').trim() || fallback
 }
 
 export default function App() {
+  const loadingPreview = new URLSearchParams(window.location.search).get('preview') === 'loading'
+  const [language, setLanguage] = useState<Language>(() => loadLanguage())
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [surveySession, setSurveySession] = useState<ActiveSurveySession | null>(null)
   const [question, setQuestion] = useState<ActiveQuestion | null>(null)
@@ -38,7 +43,7 @@ export default function App() {
   )
   const [coordinate, setCoordinate] = useState<Coordinate | null>(null)
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<MessageKey>('')
   const identityRef = useRef(identity)
   const sessionRef = useRef<ActiveSurveySession | null>(null)
   const questionRef = useRef<ActiveQuestion | null>(null)
@@ -97,16 +102,17 @@ export default function App() {
         setQuestion(null)
         setLoadState('empty')
       } else if (showLoading) {
-        setMessage(friendlyError(error))
+        setMessage('loadError')
         setLoadState('error')
       }
     }
   }, [])
 
   useEffect(() => {
+    if (loadingPreview) return
     void loadSurvey()
     return () => loadControllerRef.current?.abort()
-  }, [loadSurvey])
+  }, [loadSurvey, loadingPreview])
 
   useEffect(() => {
     if (loadState !== 'ready' && loadState !== 'completed' && loadState !== 'empty') return
@@ -143,6 +149,11 @@ export default function App() {
 
   useEffect(() => () => submitControllerRef.current?.abort(), [])
 
+  useEffect(() => {
+    document.documentElement.lang = language
+    saveLanguage(language)
+  }, [language])
+
   const handleCoordinateChange = (next: Coordinate) => {
     setCoordinate(next)
     setSubmitState('selected')
@@ -177,11 +188,19 @@ export default function App() {
       questionRef.current = nextQuestion
       setQuestion(nextQuestion)
       setLoadState(nextQuestion ? 'ready' : 'completed')
-    } catch (error) {
+    } catch {
       if (controller.signal.aborted) return
       setSubmitState('error')
-      setMessage(friendlyError(error))
+      setMessage('responseError')
     }
+  }
+
+  const text = copy[language]
+  const localizedQuestion = question ? localizeQuestion(question, language) : null
+  const localizedMessage = message ? text[message] : ''
+
+  const selectLanguage = (nextLanguage: Language) => {
+    setLanguage(nextLanguage)
   }
 
   return (
@@ -198,18 +217,41 @@ export default function App() {
         <div className="header-data" aria-hidden="true">
           <span>SYSTEM/01</span><span>INPUT/XY</span><span>RANGE/0—1</span>
         </div>
-        <span className="privacy-note"><i /> ANONYMOUS / ACTIVE</span>
+        <div className="header-controls">
+          <div className="language-switch" role="group" aria-label={text.languageSelector}>
+            {languages.map((item) => (
+              <button
+                key={item}
+                type="button"
+                className={item === language ? 'language-switch__button language-switch__button--active' : 'language-switch__button'}
+                aria-pressed={item === language}
+                onClick={() => selectLanguage(item)}
+              >
+                {item.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <span className="privacy-note"><i /> {text.privacyStatus}</span>
+        </div>
       </header>
 
       <section
-        className={`survey-card${loadState === 'ready' && question ? ' survey-card--question' : ''}`}
+        className={`survey-card${loadState === 'loading' ? ' survey-card--loading' : ''}${loadState === 'ready' && question ? ' survey-card--question' : ''}${loadState === 'completed' ? ' survey-card--completed' : ''}`}
         aria-live="polite"
       >
         {loadState === 'loading' && (
-          <div className="center-state">
-            <span className="loader" aria-hidden="true" />
-            <h1>Getting the question…</h1>
-            <p>This should only take a moment.</p>
+          <div className="center-state center-state--loading">
+            <ResponseStream
+              coordinate={{ x: 0.5, y: 0.5 }}
+              flow="vertical"
+              showAccent={false}
+              className="loading-stream"
+              testId="loading-stream"
+            />
+            <span className="loading-label">{text.loadingIndicator}</span>
+            <span className="visually-hidden" role="status">
+              {text.loadingTitle} {text.loadingBody}
+            </span>
           </div>
         )}
 
@@ -217,11 +259,11 @@ export default function App() {
           <div className="center-state center-state--waiting">
             <WaitingParticles />
             <div className="waiting-content">
-              <p className="eyebrow">Session pulse</p>
-              <h1>Waiting for the next session</h1>
-              <p>Keep this page open. The next session will appear automatically.</p>
+              <p className="eyebrow">{text.waitingEyebrow}</p>
+              <h1>{text.waitingTitle}</h1>
+              <p>{text.waitingBody}</p>
               <button className="secondary-button" type="button" onClick={() => void loadSurvey()}>
-                Check again
+                {text.checkAgain}
               </button>
             </div>
           </div>
@@ -230,11 +272,11 @@ export default function App() {
         {loadState === 'error' && (
           <div className="center-state">
             <span className="state-icon">!</span>
-            <p className="eyebrow">Connection interrupted</p>
-            <h1>We couldn’t load the survey</h1>
-            <p>{message}</p>
+            <p className="eyebrow">{text.connectionEyebrow}</p>
+            <h1>{text.connectionTitle}</h1>
+            <p>{localizedMessage}</p>
             <button className="secondary-button" type="button" onClick={() => void loadSurvey()}>
-              Try again
+              {text.tryAgain}
             </button>
           </div>
         )}
@@ -242,8 +284,8 @@ export default function App() {
         {loadState === 'completed' && surveySession && (
           <div className="completion-screen">
             <div className="completion-heading">
-              <h1>Data transmission completed</h1>
-              <p>All responses for {surveySession.title} have been securely recorded.</p>
+              <h1>{text.completionTitle}</h1>
+              <p>{text.completionBody(surveySession.title)}</p>
             </div>
 
             <div className="completion-visual">
@@ -251,33 +293,42 @@ export default function App() {
             </div>
 
             <div className="completion-actions">
-              <p className="completion-status"><i /> COMPLETED</p>
-              <p className="fine-print">Please keep this page open until the organizer closes the session.</p>
+              <div className="completion-status">
+                <span className="completion-status__key">
+                  <i className="completion-status__swatch completion-status__swatch--others" />
+                  {text.completionOthers}
+                </span>
+                <span className="completion-status__key">
+                  <i className="completion-status__swatch completion-status__swatch--yours" />
+                  {text.completionYours}
+                </span>
+                <span className="completion-status__label">{text.completionStatus}</span>
+              </div>
+              <p className="fine-print">{text.completionNote}</p>
             </div>
           </div>
         )}
 
         {loadState === 'ready' && question && surveySession && (
           <div className="survey-content">
-            <div className="question-signal-line" data-testid="question-signal-line" aria-hidden="true" />
             <div className="question-heading">
               <div className="question-index" aria-hidden="true">
                 <span>Q/{question.position}</span>
                 <span>{String(surveySession.questions.length).padStart(4, '0')}</span>
               </div>
-              <h1>{question.prompt}</h1>
+              <h1>{localizedQuestion?.prompt}</h1>
               {/* <p className="instruction">TAP OR DRAG ON THE FIELD · ADJUST BEFORE TRANSMISSION</p> */}
             </div>
 
             <div
               className={`position-readout${coordinate ? ' position-readout--active' : ''}`}
               aria-live="polite"
-              aria-label="Current coordinate position"
+              aria-label={text.currentPosition}
             >
-              <span className="position-readout__label">LIVE POSITION</span>
+              <span className="position-readout__label">{text.livePosition}</span>
               <output className="position-readout__value">
                 <span className="position-readout__axis-item">
-                  {readableAxisLabel(question.x_axis_label, 'Horizontal')}
+                  {readableAxisLabel(localizedQuestion?.xAxisLabel ?? null, text.horizontal)}
                 </span>
                 <span className="position-readout__arrow" aria-hidden="true">→</span>
                 <span className="position-readout__axis-item">
@@ -285,7 +336,7 @@ export default function App() {
                 </span>
                 <span className="position-readout__separator" aria-hidden="true">·</span>
                 <span className="position-readout__axis-item">
-                  {readableAxisLabel(question.y_axis_label, 'Vertical')}
+                  {readableAxisLabel(localizedQuestion?.yAxisLabel ?? null, text.vertical)}
                 </span>
                 <span className="position-readout__arrow" aria-hidden="true">↑</span>
                 <span className="position-readout__axis-item">
@@ -297,15 +348,16 @@ export default function App() {
             <CoordinatePlane
               value={coordinate}
               onChange={handleCoordinateChange}
-              xAxisLabel={question.x_axis_label}
-              yAxisLabel={question.y_axis_label}
+              xAxisLabel={localizedQuestion?.xAxisLabel ?? null}
+              yAxisLabel={localizedQuestion?.yAxisLabel ?? null}
               disabled={submitState === 'submitting'}
+              text={text.coordinatePlane}
             />
 
             <div className="submission-area">
               {(submitState === 'submitting' || submitState === 'error') && (
                 <div className={`status-message status-message--${submitState}`} role="status">
-                  {submitState === 'submitting' ? 'Saving your response…' : message}
+                  {submitState === 'submitting' ? text.saving : localizedMessage}
                 </div>
               )}
               <button
@@ -314,14 +366,14 @@ export default function App() {
                 disabled={!coordinate || submitState === 'submitting'}
                 onClick={() => void handleSubmit()}
               >
-                {submitState === 'submitting' ? 'Sending…' : submitState === 'error' ? 'Try sending again' : 'Send response'}
+                {submitState === 'submitting' ? text.sending : submitState === 'error' ? text.retrySending : text.sendResponse}
               </button>
-              <p className="fine-print">No name or contact details are collected.</p>
+              <p className="fine-print">{text.privacyNote}</p>
             </div>
             <div className="data-footer" aria-hidden="true">
-              <span>UUID // ENCRYPTED TOKEN</span>
-              <span>NORMALIZED SIGNAL [0.000000—1.000000]</span>
-              <span>SYS.READY</span>
+              <span>{text.identityFooter}</span>
+              <span>{text.signalFooter}</span>
+              <span>{text.readyFooter}</span>
             </div>
           </div>
         )}

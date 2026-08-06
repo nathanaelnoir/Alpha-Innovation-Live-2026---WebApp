@@ -57,6 +57,12 @@ describe('AdminDashboard', () => {
         prompt: 'How are you feeling?',
         x_axis_label: 'Energy',
         y_axis_label: 'Focus',
+        prompt_de: null,
+        x_axis_label_de: null,
+        y_axis_label_de: null,
+        prompt_it: null,
+        x_axis_label_it: null,
+        y_axis_label_it: null,
         is_active: true,
       },
     ])
@@ -94,6 +100,12 @@ describe('AdminDashboard', () => {
       prompt: 'What changed?',
       x_axis_label: 'Energy',
       y_axis_label: null,
+      prompt_de: null,
+      x_axis_label_de: null,
+      y_axis_label_de: null,
+      prompt_it: null,
+      x_axis_label_it: null,
+      y_axis_label_it: null,
       is_active: false,
     })
     render(<AdminDashboard />)
@@ -103,6 +115,10 @@ describe('AdminDashboard', () => {
 
     await userEvent.type(screen.getByLabelText('Question'), 'What changed?')
     await userEvent.type(screen.getByLabelText('X-axis label'), 'Energy')
+    await userEvent.type(screen.getByLabelText('German question'), 'Was hat sich verändert?')
+    await userEvent.type(screen.getByLabelText('German X-axis label'), 'Energie')
+    await userEvent.type(screen.getByLabelText('Italian question'), 'Che cosa è cambiato?')
+    await userEvent.type(screen.getByLabelText('Italian X-axis label'), 'Energia')
     await userEvent.click(screen.getByRole('button', { name: 'Add question' }))
 
     await waitFor(() => {
@@ -111,6 +127,12 @@ describe('AdminDashboard', () => {
         prompt: 'What changed?',
         x_axis_label: 'Energy',
         y_axis_label: null,
+        prompt_de: 'Was hat sich verändert?',
+        x_axis_label_de: 'Energie',
+        y_axis_label_de: null,
+        prompt_it: 'Che cosa è cambiato?',
+        x_axis_label_it: 'Energia',
+        y_axis_label_it: null,
       })
     })
     expect(createAdminSession).not.toHaveBeenCalled()

@@ -33,6 +33,12 @@ def make_question() -> Question:
         prompt="How useful was this session?",
         x_axis_label="Not useful",
         y_axis_label="Very useful",
+        prompt_de="Wie nützlich war diese Sitzung?",
+        x_axis_label_de="Nicht nützlich",
+        y_axis_label_de="Sehr nützlich",
+        prompt_it="Quanto è stata utile questa sessione?",
+        x_axis_label_it="Per niente utile",
+        y_axis_label_it="Molto utile",
         is_active=True,
     )
 
@@ -68,6 +74,12 @@ async def test_service_returns_only_public_active_question_fields() -> None:
         "prompt": question.prompt,
         "x_axis_label": question.x_axis_label,
         "y_axis_label": question.y_axis_label,
+        "prompt_de": question.prompt_de,
+        "x_axis_label_de": question.x_axis_label_de,
+        "y_axis_label_de": question.y_axis_label_de,
+        "prompt_it": question.prompt_it,
+        "x_axis_label_it": question.x_axis_label_it,
+        "y_axis_label_it": question.y_axis_label_it,
     }
     session.execute.assert_awaited_once()
 
@@ -116,6 +128,12 @@ async def test_active_question_endpoint() -> None:
         "prompt": "How useful was this session?",
         "x_axis_label": "Not useful",
         "y_axis_label": "Very useful",
+        "prompt_de": "Wie nützlich war diese Sitzung?",
+        "x_axis_label_de": "Nicht nützlich",
+        "y_axis_label_de": "Sehr nützlich",
+        "prompt_it": "Quanto è stata utile questa sessione?",
+        "x_axis_label_it": "Per niente utile",
+        "y_axis_label_it": "Molto utile",
     }
     assert "is_active" not in response.json()
     assert "created_at" not in response.json()

@@ -58,6 +58,12 @@ async def create_question(
     prompt: str,
     x_axis_label: str | None,
     y_axis_label: str | None,
+    prompt_de: str | None,
+    x_axis_label_de: str | None,
+    y_axis_label_de: str | None,
+    prompt_it: str | None,
+    x_axis_label_it: str | None,
+    y_axis_label_it: str | None,
 ) -> Question:
     if position is None:
         position_result = await session.execute(
@@ -73,6 +79,12 @@ async def create_question(
         prompt=prompt,
         x_axis_label=x_axis_label,
         y_axis_label=y_axis_label,
+        prompt_de=prompt_de,
+        x_axis_label_de=x_axis_label_de,
+        y_axis_label_de=y_axis_label_de,
+        prompt_it=prompt_it,
+        x_axis_label_it=x_axis_label_it,
+        y_axis_label_it=y_axis_label_it,
         is_active=False,
     )
     session.add(question)

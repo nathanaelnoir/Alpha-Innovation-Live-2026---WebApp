@@ -8,6 +8,25 @@ interface CoordinatePlaneProps {
   xAxisLabel: string | null
   yAxisLabel: string | null
   disabled?: boolean
+  text?: CoordinatePlaneText
+}
+
+export interface CoordinatePlaneText {
+  ariaLabel: string
+  selectedPoint: string
+  noPoint: string
+  tapHint: string
+  horizontal: string
+  vertical: string
+}
+
+const defaultText: CoordinatePlaneText = {
+  ariaLabel: 'Choose your response on the coordinate plane',
+  selectedPoint: 'Selected point',
+  noPoint: 'No point selected',
+  tapHint: '[ TAP OR DRAG TO RESPOND ]',
+  horizontal: 'horizontal',
+  vertical: 'vertical',
 }
 
 const KEYBOARD_STEP = 0.02
@@ -18,6 +37,7 @@ export function CoordinatePlane({
   xAxisLabel,
   yAxisLabel,
   disabled = false,
+  text = defaultText,
 }: CoordinatePlaneProps) {
   const surfaceRef = useRef<HTMLDivElement>(null)
 
@@ -61,8 +81,8 @@ export function CoordinatePlane({
 
   const point = value ? coordinateToPercent(value) : null
   const readableValue = value
-    ? `Selected point: ${xAxisLabel ?? 'horizontal'} ${Math.round(value.x * 100)}%, ${yAxisLabel ?? 'vertical'} ${Math.round(value.y * 100)}%`
-    : 'No point selected'
+    ? `${text.selectedPoint}: ${xAxisLabel ?? text.horizontal} ${Math.round(value.x * 100)}%, ${yAxisLabel ?? text.vertical} ${Math.round(value.y * 100)}%`
+    : text.noPoint
 
   return (
     <div className="coordinate-layout">
@@ -75,7 +95,7 @@ export function CoordinatePlane({
         className={`coordinate-surface${disabled ? ' coordinate-surface--disabled' : ''}`}
         role="slider"
         tabIndex={disabled ? -1 : 0}
-        aria-label="Choose your response on the coordinate plane"
+        aria-label={text.ariaLabel}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={value ? Math.round(value.x * 100) : undefined}
@@ -97,6 +117,12 @@ export function CoordinatePlane({
           <path className="grid-major" d="M50 0V100 M0 50H100" />
         </svg>
         <div className="scan-band" aria-hidden="true" />
+        <div className="coordinate-scale" data-testid="coordinate-scale" aria-hidden="true">
+          <span className="coordinate-scale__marker coordinate-scale__marker--x-min">X/0%</span>
+          <span className="coordinate-scale__marker coordinate-scale__marker--x-max">X/100%</span>
+          <span className="coordinate-scale__marker coordinate-scale__marker--y-min">Y/0%</span>
+          <span className="coordinate-scale__marker coordinate-scale__marker--y-max">Y/100%</span>
+        </div>
         {point && (
           <div
             className="selected-point"
@@ -106,7 +132,7 @@ export function CoordinatePlane({
             <span />
           </div>
         )}
-        {!value && <span className="tap-hint">[ TAP / DRAG TO INPUT ]</span>}
+        {!value && <span className="tap-hint">{text.tapHint}</span>}
       </div>
       {/* <div className="axis-label axis-label--x">
         <span>{xAxisLabel ?? 'Horizontal scale'}</span>

@@ -51,6 +51,8 @@ def make_question(session_id: uuid.UUID, position: int) -> Question:
         session_id=session_id,
         position=position,
         prompt=f"Question {position}",
+        prompt_de=f"Frage {position}",
+        prompt_it=f"Domanda {position}",
         is_active=True,
     )
 
@@ -73,6 +75,14 @@ async def test_active_session_returns_questions_in_repository_order() -> None:
     assert result.id == survey_session.id
     assert [question.id for question in result.questions] == [
         question.id for question in questions
+    ]
+    assert [question.prompt_de for question in result.questions] == [
+        "Frage 1",
+        "Frage 2",
+    ]
+    assert [question.prompt_it for question in result.questions] == [
+        "Domanda 1",
+        "Domanda 2",
     ]
     questions_statement = session.execute.await_args_list[1].args[0]
     assert "ORDER BY questions.position ASC" in str(

@@ -3,6 +3,10 @@ import type { Coordinate } from './types'
 
 interface ResponseStreamProps {
   coordinate: Coordinate
+  flow?: 'horizontal' | 'vertical'
+  showAccent?: boolean
+  className?: string
+  testId?: string
 }
 
 const vertexShaderSource = `
@@ -23,6 +27,8 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
+uniform float u_vertical;
+uniform float u_accent;
 
 float random(in float x) {
   return fract(sin(x) * 1e4);
@@ -44,29 +50,37 @@ void main() {
   vec2 st = gl_FragCoord.xy / u_resolution.xy;
   st.x *= u_resolution.x / u_resolution.y;
 
-  vec2 grid = vec2(50.0, 25.0);
+  vec2 grid = mix(vec2(50.0, 25.0), vec2(25.0, 50.0), u_vertical);
   st *= grid;
 
   vec2 integerPosition = floor(st);
   vec2 cellPosition = fract(st);
-  vec2 velocity = vec2(u_time * 2.0 * max(grid.x, grid.y));
-  velocity *= vec2(-1.0, 0.0) * random(1.0 + integerPosition.y);
+  vec2 flowDirection = mix(vec2(-1.0, 0.0), vec2(0.0, 1.0), u_vertical);
+  float lane = mix(integerPosition.y, integerPosition.x, u_vertical);
+  vec2 velocity = flowDirection
+    * u_time * 2.0 * max(grid.x, grid.y)
+    * random(1.0 + lane);
 
-  vec2 offset = vec2(0.1, 0.0);
-  float threshold = 0.5 + u_mouse.x / u_resolution.x;
+  vec2 offset = mix(vec2(0.1, 0.0), vec2(0.0, 0.1), u_vertical);
+  float inputPosition = mix(
+    u_mouse.x / u_resolution.x,
+    u_mouse.y / u_resolution.y,
+    u_vertical
+  );
+  float threshold = 0.5 + inputPosition;
   float firstSignal = pattern(st + offset, velocity, threshold);
   float secondSignal = pattern(st, velocity, threshold);
   float blueSignal = pattern(st - offset, velocity, threshold);
-  float margin = step(0.1, cellPosition.y);
+  float margin = step(0.1, mix(cellPosition.y, cellPosition.x, u_vertical));
   float dataSignal = max(firstSignal, max(secondSignal, blueSignal)) * margin;
 
   float blueAccent = blueSignal * step(
     0.88,
     random(integerPosition + vec2(17.0, 3.0))
-  ) * margin;
+  ) * margin * u_accent;
   vec3 background = vec3(0.015);
   vec3 whiteInk = vec3(0.945);
-  vec3 blueInk = vec3(0.0, 0.0, 1.0);
+  vec3 blueInk = vec3(54.0, 91.0, 216.0) / 255.0;
   vec3 ink = mix(whiteInk, blueInk, blueAccent);
   vec3 color = mix(background, ink, dataSignal);
 
@@ -90,7 +104,13 @@ function compileShader(
   return shader
 }
 
-export function ResponseStream({ coordinate }: ResponseStreamProps) {
+export function ResponseStream({
+  coordinate,
+  flow = 'horizontal',
+  showAccent = true,
+  className = '',
+  testId = 'response-success-animation',
+}: ResponseStreamProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -125,6 +145,8 @@ export function ResponseStream({ coordinate }: ResponseStreamProps) {
     const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
     const mouseLocation = gl.getUniformLocation(program, 'u_mouse')
     const timeLocation = gl.getUniformLocation(program, 'u_time')
+    const verticalLocation = gl.getUniformLocation(program, 'u_vertical')
+    const accentLocation = gl.getUniformLocation(program, 'u_accent')
     gl.enableVertexAttribArray(positionLocation)
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 
@@ -152,6 +174,8 @@ export function ResponseStream({ coordinate }: ResponseStreamProps) {
         coordinate.y * canvas.height,
       )
       gl.uniform1f(timeLocation, (now - startedAt) / 1000)
+      gl.uniform1f(verticalLocation, flow === 'vertical' ? 1 : 0)
+      gl.uniform1f(accentLocation, showAccent ? 1 : 0)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
       frameId = window.requestAnimationFrame(render)
     }
@@ -165,12 +189,12 @@ export function ResponseStream({ coordinate }: ResponseStreamProps) {
       gl.deleteShader(vertexShader)
       gl.deleteShader(fragmentShader)
     }
-  }, [coordinate])
+  }, [coordinate, flow, showAccent])
 
   return (
     <div
-      className="response-stream"
-      data-testid="response-success-animation"
+      className={`response-stream${className ? ` ${className}` : ''}`}
+      data-testid={testId}
       aria-hidden="true"
     >
       <canvas ref={canvasRef} />

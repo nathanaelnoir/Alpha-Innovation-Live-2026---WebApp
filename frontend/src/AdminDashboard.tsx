@@ -26,6 +26,12 @@ export function AdminDashboard() {
   const [prompt, setPrompt] = useState('')
   const [xLabel, setXLabel] = useState('')
   const [yLabel, setYLabel] = useState('')
+  const [promptDe, setPromptDe] = useState('')
+  const [xLabelDe, setXLabelDe] = useState('')
+  const [yLabelDe, setYLabelDe] = useState('')
+  const [promptIt, setPromptIt] = useState('')
+  const [xLabelIt, setXLabelIt] = useState('')
+  const [yLabelIt, setYLabelIt] = useState('')
 
   const refresh = async (organizerToken = token) => {
     const [nextSessions, nextQuestions] = await Promise.all([
@@ -80,10 +86,22 @@ export function AdminDashboard() {
         prompt,
         x_axis_label: xLabel.trim() || null,
         y_axis_label: yLabel.trim() || null,
+        prompt_de: promptDe.trim() || null,
+        x_axis_label_de: xLabelDe.trim() || null,
+        y_axis_label_de: yLabelDe.trim() || null,
+        prompt_it: promptIt.trim() || null,
+        x_axis_label_it: xLabelIt.trim() || null,
+        y_axis_label_it: yLabelIt.trim() || null,
       })
       setPrompt('')
       setXLabel('')
       setYLabel('')
+      setPromptDe('')
+      setXLabelDe('')
+      setYLabelDe('')
+      setPromptIt('')
+      setXLabelIt('')
+      setYLabelIt('')
       await refresh()
     })
   }
@@ -177,9 +195,24 @@ export function AdminDashboard() {
             <label>Session<select value={questionSessionId} onChange={(event) => setQuestionSessionId(event.target.value)} required>
               {closedSessions.map((session) => <option key={session.id} value={session.id}>{session.title}</option>)}
             </select></label>
-            <label className="admin-wide">Question<input value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
-            <label>X-axis label<input value={xLabel} onChange={(event) => setXLabel(event.target.value)} /></label>
-            <label>Y-axis label<input value={yLabel} onChange={(event) => setYLabel(event.target.value)} /></label>
+            <fieldset className="admin-translation-group">
+              <legend>English</legend>
+              <label className="admin-wide">Question<input value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
+              <label>X-axis label<input value={xLabel} onChange={(event) => setXLabel(event.target.value)} /></label>
+              <label>Y-axis label<input value={yLabel} onChange={(event) => setYLabel(event.target.value)} /></label>
+            </fieldset>
+            <fieldset className="admin-translation-group">
+              <legend>German</legend>
+              <label className="admin-wide">German question<input value={promptDe} onChange={(event) => setPromptDe(event.target.value)} /></label>
+              <label>German X-axis label<input value={xLabelDe} onChange={(event) => setXLabelDe(event.target.value)} /></label>
+              <label>German Y-axis label<input value={yLabelDe} onChange={(event) => setYLabelDe(event.target.value)} /></label>
+            </fieldset>
+            <fieldset className="admin-translation-group">
+              <legend>Italian</legend>
+              <label className="admin-wide">Italian question<input value={promptIt} onChange={(event) => setPromptIt(event.target.value)} /></label>
+              <label>Italian X-axis label<input value={xLabelIt} onChange={(event) => setXLabelIt(event.target.value)} /></label>
+              <label>Italian Y-axis label<input value={yLabelIt} onChange={(event) => setYLabelIt(event.target.value)} /></label>
+            </fieldset>
             <button type="submit" disabled={busy}>Add question</button>
           </form>
         )}

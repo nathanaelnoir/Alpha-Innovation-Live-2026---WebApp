@@ -14,8 +14,10 @@ pseudonymous participant tokens, response upserts, and protected CSV export.
 The participant interface creates and saves a pseudonymous identity in browser
 local storage, loads the open session, and advances through that session's
 ordered questions independently in each browser. It supports touch, pen, mouse,
-and keyboard response selection. Accepted answers remain in PostgreSQL, while
-the current session progress is stored locally in the participant's browser.
+and keyboard response selection. A compact header control switches the full
+participant experience between English, German, and Italian and remembers the
+selection locally. Accepted answers remain in PostgreSQL, while the current
+session progress is stored locally in the participant's browser.
 It does not display or collect names, contact details, or participant tokens.
 
 While the page is visible, it checks for question changes every 5–7 seconds
@@ -99,7 +101,7 @@ curl -X POST http://localhost:8000/api/v1/sessions \
 curl -X POST http://localhost:8000/api/v1/questions \
   -H "Authorization: Bearer $RESULTS_EXPORT_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"session_id":"SESSION_ID","position":1,"prompt":"How do you feel before the keynote?"}'
+  -d '{"session_id":"SESSION_ID","position":1,"prompt":"How do you feel before the keynote?","prompt_de":"Wie fühlen Sie sich vor der Keynote?","prompt_it":"Come si sente prima del keynote?"}'
 
 curl -X PUT http://localhost:8000/api/v1/sessions/SESSION_ID/open \
   -H "Authorization: Bearer $RESULTS_EXPORT_TOKEN"
@@ -110,6 +112,10 @@ curl -X PUT http://localhost:8000/api/v1/sessions/SESSION_ID/close \
 
 Questions cannot be added while their session is open, and an empty session
 cannot be opened. Opening one session atomically closes any previous session.
+English question text and labels use `prompt`, `x_axis_label`, and
+`y_axis_label`. Optional German translations use the `_de` suffix and Italian
+translations use `_it`; active-question and active-session responses return all
+three languages.
 
 ### Organizer dashboard
 
