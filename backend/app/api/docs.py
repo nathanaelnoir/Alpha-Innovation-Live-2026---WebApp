@@ -22,6 +22,11 @@ is `(0.5, 0.5)`, and top-right is `(1, 1)`. Display values are recovered with
 Response submission is idempotent: retrying for the same participant and
 question updates the existing point instead of creating a duplicate.
 
+Organizer deletion endpoints are irreversible. Sessions must be closed before
+their questions or associated responses can be deleted. The collected-data wipe
+also requires every session to be closed and preserves the session and question
+configuration.
+
 ### Authentication and privacy
 
 Response submission uses the participant token as a Bearer token. Select
@@ -58,6 +63,10 @@ OPENAPI_TAGS = [
     {
         "name": "Results",
         "description": "Organizer-only export of stored survey responses.",
+    },
+    {
+        "name": "Organizer",
+        "description": "Protected destructive data-retention operations.",
     },
     {
         "name": "Operations",

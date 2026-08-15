@@ -1,9 +1,10 @@
 import uuid
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.question import Question
+from app.models.response import Response
 from app.models.survey_session import SurveySession
 
 ACTIVE_SESSION_ADVISORY_LOCK = 7_361_772_901
@@ -98,3 +99,12 @@ async def set_session_questions_active(
         .where(Question.session_id == session_id)
         .values(is_active=active, updated_at=func.now())
     )
+
+
+async def delete_session(session: AsyncSession, session_id: uuid.UUID) -> None:
+    question_ids = select(Question.id).where(Question.session_id == session_id)
+    await session.execute(
+        delete(Response).where(Response.question_id.in_(question_ids))
+    )
+    await session.execute(delete(Question).where(Question.session_id == session_id))
+    await session.execute(delete(SurveySession).where(SurveySession.id == session_id))

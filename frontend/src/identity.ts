@@ -32,3 +32,10 @@ export function saveParticipantIdentity(identity: ParticipantIdentity): void {
   }
 }
 
+export function clearParticipantIdentity(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Storage can be unavailable in private browsing modes.
+  }
+}

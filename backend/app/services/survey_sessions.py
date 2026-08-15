@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import (
     ActiveSessionNotFoundError,
     EmptySurveySessionError,
+    SurveySessionDeletionConflictError,
     SurveySessionNotFoundError,
     SurveySessionPersistenceError,
     SurveySessionRetrievalError,
@@ -21,6 +22,7 @@ from app.repositories.survey_sessions import (
     set_session_questions_active,
 )
 from app.repositories.survey_sessions import create_session as persist_session
+from app.repositories.survey_sessions import delete_session as persist_session_deletion
 from app.repositories.survey_sessions import (
     get_active_session as retrieve_active_session,
 )
@@ -135,6 +137,21 @@ async def close_session(
         logger.error("session_close_failed")
         raise SurveySessionPersistenceError from error
     return _to_admin_view(survey_session, question_count)
+
+
+async def delete_session(session: AsyncSession, session_id: uuid.UUID) -> None:
+    try:
+        async with session.begin():
+            await acquire_active_session_lock(session)
+            survey_session = await get_session_for_update(session, session_id)
+            if survey_session is None:
+                raise SurveySessionNotFoundError
+            if survey_session.is_open:
+                raise SurveySessionDeletionConflictError
+            await persist_session_deletion(session, session_id)
+    except SQLAlchemyError as error:
+        logger.error("session_deletion_failed")
+        raise SurveySessionPersistenceError from error
 
 
 def _to_admin_view(

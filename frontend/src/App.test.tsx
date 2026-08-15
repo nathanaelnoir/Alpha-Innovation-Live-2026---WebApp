@@ -183,6 +183,42 @@ describe('App', () => {
     expect(mockedSubmitResponse).toHaveBeenCalledTimes(2)
   })
 
+  it('replaces a wiped participant identity before retrying', async () => {
+    const surface = await renderReadyApp()
+    fireEvent.pointerDown(surface, { pointerId: 1, clientX: 50, clientY: 150 })
+    const replacement = {
+      participantId: 'participant-2',
+      participantToken: 'replacement-token',
+    }
+    mockedCreateParticipant.mockResolvedValue(replacement)
+    mockedSubmitResponse
+      .mockRejectedValueOnce(
+        new ApiError(
+          'The participant token is no longer valid.',
+          401,
+          'participant_not_found',
+        ),
+      )
+      .mockResolvedValueOnce({ ...accepted, x: 0.25, y: 0.25 })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send response' }))
+    expect(
+      await screen.findByText('Your response could not be saved. Please try again.'),
+    ).toBeInTheDocument()
+    expect(mockedCreateParticipant).toHaveBeenCalledTimes(2)
+    expect(window.localStorage.getItem('conference-survey-participant-v1')).toContain(
+      'replacement-token',
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try sending again' }))
+    expect(mockedSubmitResponse).toHaveBeenLastCalledWith(
+      question.id,
+      { x: 0.25, y: 0.25 },
+      'replacement-token',
+      expect.any(AbortSignal),
+    )
+  })
+
   it('waits when no session is open and can retry', async () => {
     mockedCreateParticipant.mockResolvedValue(participant)
     mockedGetActiveSession.mockRejectedValueOnce(

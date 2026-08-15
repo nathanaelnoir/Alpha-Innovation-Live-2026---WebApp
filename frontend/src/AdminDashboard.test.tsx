@@ -1,14 +1,17 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminDashboard } from './AdminDashboard'
 import {
   createAdminQuestion,
   createAdminSession,
+  deleteAdminQuestion,
+  deleteAdminSession,
   downloadAdminResults,
   listAdminQuestions,
   listAdminSessions,
   setAdminSessionOpen,
+  wipeAdminCollectedData,
 } from './api'
 import type { AdminSession } from './types'
 
@@ -18,10 +21,13 @@ vi.mock('./api', async (importOriginal) => {
     ...original,
     createAdminQuestion: vi.fn(),
     createAdminSession: vi.fn(),
+    deleteAdminQuestion: vi.fn(),
+    deleteAdminSession: vi.fn(),
     downloadAdminResults: vi.fn(),
     listAdminQuestions: vi.fn(),
     listAdminSessions: vi.fn(),
     setAdminSessionOpen: vi.fn(),
+    wipeAdminCollectedData: vi.fn(),
   }
 })
 
@@ -41,7 +47,7 @@ const closedSession: AdminSession = {
   id: 'session-closed',
   title: 'Closing session',
   is_open: false,
-  question_count: 0,
+  question_count: 1,
   opened_at: null,
 }
 
@@ -64,6 +70,21 @@ describe('AdminDashboard', () => {
         x_axis_label_it: null,
         y_axis_label_it: null,
         is_active: true,
+      },
+      {
+        id: 'question-closed',
+        session_id: closedSession.id,
+        position: 1,
+        prompt: 'What changed?',
+        x_axis_label: null,
+        y_axis_label: null,
+        prompt_de: null,
+        x_axis_label_de: null,
+        y_axis_label_de: null,
+        prompt_it: null,
+        x_axis_label_it: null,
+        y_axis_label_it: null,
+        is_active: false,
       },
     ])
   })
@@ -137,5 +158,73 @@ describe('AdminDashboard', () => {
     })
     expect(createAdminSession).not.toHaveBeenCalled()
     expect(downloadAdminResults).not.toHaveBeenCalled()
+  })
+
+  it('warns before deleting closed questions and sessions', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<AdminDashboard />)
+    await userEvent.type(screen.getByLabelText('Organizer token'), 'organizer-secret')
+    await userEvent.click(screen.getByRole('button', { name: 'Open dashboard' }))
+
+    const closedQuestion = await screen.findByText('What changed?')
+    await userEvent.click(
+      within(closedQuestion.closest('li')!).getByRole('button', {
+        name: 'Delete question',
+      }),
+    )
+    await waitFor(() => {
+      expect(deleteAdminQuestion).toHaveBeenCalledWith(
+        'organizer-secret',
+        'question-closed',
+      )
+    })
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('cannot be undone'))
+
+    const closedSessionCard = screen
+      .getByText('Closing session', { selector: 'strong' })
+      .closest('article')!
+    await userEvent.click(
+      within(closedSessionCard).getByRole('button', { name: 'Delete session' }),
+    )
+    await waitFor(() => {
+      expect(deleteAdminSession).toHaveBeenCalledWith(
+        'organizer-secret',
+        closedSession.id,
+      )
+    })
+    confirm.mockRestore()
+  })
+
+  it('requires typed and final confirmation before wiping collected data', async () => {
+    vi.mocked(listAdminSessions).mockResolvedValue([closedSession])
+    vi.mocked(listAdminQuestions).mockResolvedValue([])
+    vi.mocked(wipeAdminCollectedData).mockResolvedValue({
+      responses_deleted: 14,
+      participants_deleted: 9,
+    })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<AdminDashboard />)
+    await userEvent.type(screen.getByLabelText('Organizer token'), 'organizer-secret')
+    await userEvent.click(screen.getByRole('button', { name: 'Open dashboard' }))
+
+    const wipeButton = await screen.findByRole('button', {
+      name: 'Permanently wipe collected data',
+    })
+    expect(wipeButton).toBeDisabled()
+    await userEvent.type(
+      screen.getByLabelText(/Type WIPE DATA to confirm/),
+      'WIPE DATA',
+    )
+    expect(wipeButton).toBeEnabled()
+    await userEvent.click(wipeButton)
+
+    await waitFor(() => {
+      expect(wipeAdminCollectedData).toHaveBeenCalledWith('organizer-secret')
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Wiped 14 responses and 9 pseudonymous participants.',
+    )
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Final warning'))
+    confirm.mockRestore()
   })
 })

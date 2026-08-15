@@ -13,6 +13,7 @@ from app.schemas.survey_session import (
 from app.services.survey_sessions import (
     close_session,
     create_session,
+    delete_session,
     get_active_session,
     list_sessions,
     open_session,
@@ -61,6 +62,32 @@ async def create_session_route(
     session: SessionDependency,
 ) -> SurveySessionAdminView:
     return await create_session(session, session_data)
+
+
+@router.delete(
+    "/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently delete a survey session",
+    description=(
+        "Deletes a closed session, all of its questions, and all responses to "
+        "those questions. Organizer authorization is required."
+    ),
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse},
+    },
+    operation_id="deleteSession",
+)
+async def delete_session_route(
+    session_id: Annotated[
+        uuid.UUID, Path(description="Session UUID to permanently delete.")
+    ],
+    _authorized: OrganizerAccessDependency,
+    session: SessionDependency,
+) -> None:
+    await delete_session(session, session_id)
 
 
 @router.put(

@@ -2,6 +2,7 @@ import type {
   ActiveSurveySession,
   AdminQuestion,
   AdminSession,
+  CollectedDataWipeResult,
   Coordinate,
   ParticipantIdentity,
   ResponseAccepted,
@@ -137,6 +138,35 @@ export function setAdminSessionOpen(
     `/api/v1/sessions/${sessionId}/${open ? 'open' : 'close'}`,
     { method: 'PUT', headers: organizerHeaders(token) },
   )
+}
+
+export async function deleteAdminSession(
+  token: string,
+  sessionId: string,
+): Promise<void> {
+  await fetchApi(`/api/v1/sessions/${sessionId}`, {
+    method: 'DELETE',
+    headers: organizerHeaders(token),
+  })
+}
+
+export async function deleteAdminQuestion(
+  token: string,
+  questionId: string,
+): Promise<void> {
+  await fetchApi(`/api/v1/questions/${questionId}`, {
+    method: 'DELETE',
+    headers: organizerHeaders(token),
+  })
+}
+
+export function wipeAdminCollectedData(
+  token: string,
+): Promise<CollectedDataWipeResult> {
+  return request<CollectedDataWipeResult>('/api/v1/admin/collected-data', {
+    method: 'DELETE',
+    headers: organizerHeaders(token),
+  })
 }
 
 export function createAdminQuestion(

@@ -10,6 +10,7 @@ from app.core.exceptions import (
     QuestionNotFoundError,
     QuestionPersistenceError,
     QuestionRetrievalError,
+    SurveySessionDeletionConflictError,
     SurveySessionNotEditableError,
     SurveySessionNotFoundError,
 )
@@ -17,6 +18,7 @@ from app.models.question import Question
 from app.repositories.questions import (
     create_question as persist_question,
 )
+from app.repositories.questions import delete_question as persist_question_deletion
 from app.repositories.questions import (
     get_active_question as retrieve_active_question,
 )
@@ -97,6 +99,23 @@ async def create_question(
         logger.error("question_creation_failed")
         raise QuestionPersistenceError from error
     return _to_admin_view(question)
+
+
+async def delete_question(session: AsyncSession, question_id: uuid.UUID) -> None:
+    try:
+        async with session.begin():
+            question = await get_question_for_activation(session, question_id)
+            if question is None:
+                raise QuestionNotFoundError
+            survey_session = await get_session_for_update(session, question.session_id)
+            if survey_session is None:
+                raise SurveySessionNotFoundError
+            if survey_session.is_open:
+                raise SurveySessionDeletionConflictError
+            await persist_question_deletion(session, question_id)
+    except SQLAlchemyError as error:
+        logger.error("question_deletion_failed")
+        raise QuestionPersistenceError from error
 
 
 async def activate_question(

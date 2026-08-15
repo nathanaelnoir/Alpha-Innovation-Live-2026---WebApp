@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, createParticipant, getActiveSession, submitResponse } from './api'
 import { CoordinatePlane } from './CoordinatePlane'
-import { loadParticipantIdentity, saveParticipantIdentity } from './identity'
+import {
+  clearParticipantIdentity,
+  loadParticipantIdentity,
+  saveParticipantIdentity,
+} from './identity'
 import {
   copy,
   languages,
@@ -188,8 +192,14 @@ export default function App() {
       questionRef.current = nextQuestion
       setQuestion(nextQuestion)
       setLoadState(nextQuestion ? 'ready' : 'completed')
-    } catch {
+    } catch (error) {
       if (controller.signal.aborted) return
+      if (error instanceof ApiError && error.code === 'participant_not_found') {
+        clearParticipantIdentity()
+        identityRef.current = null
+        setIdentity(null)
+        await loadSurvey(false)
+      }
       setSubmitState('error')
       setMessage('responseError')
     }

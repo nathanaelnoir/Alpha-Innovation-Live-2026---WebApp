@@ -24,6 +24,7 @@ async def test_openapi_schema_describes_complete_participant_flow() -> None:
         "Questions",
         "Responses",
         "Results",
+        "Organizer",
         "Operations",
     ]
 
@@ -39,6 +40,13 @@ async def test_openapi_schema_describes_complete_participant_flow() -> None:
     activate_question_operation = schema["paths"][
         "/api/v1/questions/{question_id}/activate"
     ]["put"]
+    delete_question_operation = schema["paths"]["/api/v1/questions/{question_id}"][
+        "delete"
+    ]
+    delete_session_operation = schema["paths"]["/api/v1/sessions/{session_id}"][
+        "delete"
+    ]
+    wipe_operation = schema["paths"]["/api/v1/admin/collected-data"]["delete"]
     assert participant_operation["summary"] == "Create a pseudonymous participant"
     assert session_operation["operationId"] == "getActiveSession"
     assert question_operation["operationId"] == "getActiveQuestion"
@@ -59,6 +67,10 @@ async def test_openapi_schema_describes_complete_participant_flow() -> None:
     assert list_questions_operation["operationId"] == "listQuestions"
     assert list_questions_operation["security"] == [{"OrganizerToken": []}]
     assert activate_question_operation["operationId"] == "activateQuestion"
+    assert delete_question_operation["operationId"] == "deleteQuestion"
+    assert delete_session_operation["operationId"] == "deleteSession"
+    assert wipe_operation["operationId"] == "wipeCollectedData"
+    assert wipe_operation["security"] == [{"OrganizerToken": []}]
     assert (
         "signed participant token"
         in schema["components"]["securitySchemes"]["ParticipantToken"][
@@ -81,3 +93,24 @@ async def test_swagger_ui_uses_review_friendly_defaults() -> None:
     assert '"docExpansion": "list"' in response.text
     assert '"filter": true' in response.text
     assert '"persistAuthorization": false' in response.text
+
+
+@pytest.mark.asyncio
+async def test_cors_preflight_allows_admin_delete_requests() -> None:
+    frontend_origin = "https://survey.example.com"
+    app = create_app(Settings(frontend_origin=frontend_origin, _env_file=None))
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.options(
+            "/api/v1/admin/collected-data",
+            headers={
+                "Origin": frontend_origin,
+                "Access-Control-Request-Method": "DELETE",
+                "Access-Control-Request-Headers": "authorization",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == frontend_origin
+    assert "DELETE" in response.headers["access-control-allow-methods"]

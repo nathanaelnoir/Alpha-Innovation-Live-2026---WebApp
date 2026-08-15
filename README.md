@@ -56,13 +56,16 @@ Available endpoints:
 - `POST /api/v1/sessions` (organizer Bearer token required)
 - `PUT /api/v1/sessions/{session_id}/open` (organizer token required)
 - `PUT /api/v1/sessions/{session_id}/close` (organizer token required)
+- `DELETE /api/v1/sessions/{session_id}` (organizer token required)
 - `GET /api/v1/questions/active`
 - `GET /api/v1/questions` (organizer Bearer token required)
 - `POST /api/v1/questions` (organizer Bearer token required)
 - `PUT /api/v1/questions/{question_id}/activate` (legacy session-open alias)
 - `PUT /api/v1/questions/{question_id}/close` (legacy session-close alias)
+- `DELETE /api/v1/questions/{question_id}` (organizer token required)
 - `PUT /api/v1/questions/{question_id}/response`
 - `GET /api/v1/results.csv` (organizer Bearer token required)
+- `DELETE /api/v1/admin/collected-data` (organizer token required)
 
 The results download uses semicolons as its CSV delimiter so it opens into
 separate columns in Excel installations that use European regional settings.
@@ -144,7 +147,16 @@ three languages.
 Open `/admin` on the frontend origin and enter `RESULTS_EXPORT_TOKEN`. The token
 is held only in the current page's memory. The dashboard can create sessions,
 add ordered questions to closed sessions, open or close sessions, refresh state,
-and download the protected CSV export.
+download the protected CSV export, and permanently delete closed sessions or
+questions with confirmation. Deleting a question also deletes its responses;
+deleting a session deletes its questions and their responses.
+
+The dashboard danger zone can wipe all collected responses and pseudonymous
+participant UUIDs while preserving sessions and questions. Every session must
+be closed, and the organizer must type `WIPE DATA` and accept a final warning.
+Export the CSV first if the data must be retained. Browsers whose participant
+identity was wiped automatically obtain a fresh pseudonymous identity when they
+next attempt to submit.
 
 ### Backend setup
 

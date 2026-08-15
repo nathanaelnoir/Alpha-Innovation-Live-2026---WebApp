@@ -10,6 +10,7 @@ from app.services.questions import (
     activate_question,
     close_question,
     create_question,
+    delete_question,
     get_active_question,
     list_questions,
 )
@@ -110,6 +111,32 @@ async def create_question_route(
     session: SessionDependency,
 ) -> QuestionAdminView:
     return await create_question(session, question_data)
+
+
+@router.delete(
+    "/{question_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently delete a question",
+    description=(
+        "Deletes a question and all of its stored responses. The owning session "
+        "must be closed and organizer authorization is required."
+    ),
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse},
+    },
+    operation_id="deleteQuestion",
+)
+async def delete_question_route(
+    question_id: Annotated[
+        uuid.UUID, Path(description="UUID of the question to permanently delete.")
+    ],
+    _authorized: OrganizerAccessDependency,
+    session: SessionDependency,
+) -> None:
+    await delete_question(session, question_id)
 
 
 @router.put(

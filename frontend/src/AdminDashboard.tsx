@@ -3,10 +3,13 @@ import {
   ApiError,
   createAdminQuestion,
   createAdminSession,
+  deleteAdminQuestion,
+  deleteAdminSession,
   downloadAdminResults,
   listAdminQuestions,
   listAdminSessions,
   setAdminSessionOpen,
+  wipeAdminCollectedData,
 } from './api'
 import type { AdminQuestion, AdminSession } from './types'
 
@@ -21,6 +24,8 @@ export function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [notice, setNotice] = useState('')
+  const [wipeConfirmation, setWipeConfirmation] = useState('')
   const [sessionTitle, setSessionTitle] = useState('')
   const [questionSessionId, setQuestionSessionId] = useState('')
   const [prompt, setPrompt] = useState('')
@@ -51,6 +56,7 @@ export function AdminDashboard() {
   const runAction = async (action: () => Promise<void>) => {
     setBusy(true)
     setMessage('')
+    setNotice('')
     try {
       await action()
     } catch (error) {
@@ -106,6 +112,36 @@ export function AdminDashboard() {
     })
   }
 
+  const handleDeleteSession = (session: AdminSession) => {
+    const warning = `Permanently delete “${session.title}”, its ${session.question_count} question${session.question_count === 1 ? '' : 's'}, and every response collected for them? This cannot be undone.`
+    if (!window.confirm(warning)) return
+    void runAction(async () => {
+      await deleteAdminSession(token, session.id)
+      await refresh()
+      setNotice(`Deleted session “${session.title}” and its associated data.`)
+    })
+  }
+
+  const handleDeleteQuestion = (question: AdminQuestion) => {
+    const warning = `Permanently delete “${question.prompt}” and every response collected for it? This cannot be undone.`
+    if (!window.confirm(warning)) return
+    void runAction(async () => {
+      await deleteAdminQuestion(token, question.id)
+      await refresh()
+      setNotice(`Deleted question “${question.prompt}” and its responses.`)
+    })
+  }
+
+  const handleWipeCollectedData = () => {
+    if (wipeConfirmation !== 'WIPE DATA') return
+    if (!window.confirm('Final warning: permanently delete every response and participant UUID? Survey sessions and questions will remain.')) return
+    void runAction(async () => {
+      const result = await wipeAdminCollectedData(token)
+      setWipeConfirmation('')
+      setNotice(`Wiped ${result.responses_deleted} responses and ${result.participants_deleted} pseudonymous participants.`)
+    })
+  }
+
   if (!authenticated) {
     return (
       <main className="admin-shell">
@@ -147,6 +183,7 @@ export function AdminDashboard() {
       </header>
 
       {message && <p className="admin-error" role="alert">{message}</p>}
+      {notice && <p className="admin-notice" role="status">{notice}</p>}
 
       <section className="admin-panel">
         <h2>Sessions</h2>
@@ -160,21 +197,45 @@ export function AdminDashboard() {
               <span className={session.is_open ? 'admin-status admin-status--open' : 'admin-status'}>
                 {session.is_open ? 'Open' : 'Closed'}
               </span>
-              <button
-                type="button"
-                disabled={busy || (!session.is_open && session.question_count === 0)}
-                onClick={() => void runAction(async () => {
-                  await setAdminSessionOpen(token, session.id, !session.is_open)
-                  await refresh()
-                })}
-              >
-                {session.is_open ? 'Close session' : 'Open session'}
-              </button>
+              <div className="admin-session-actions">
+                <button
+                  type="button"
+                  disabled={busy || (!session.is_open && session.question_count === 0)}
+                  onClick={() => void runAction(async () => {
+                    await setAdminSessionOpen(token, session.id, !session.is_open)
+                    await refresh()
+                  })}
+                >
+                  {session.is_open ? 'Close session' : 'Open session'}
+                </button>
+                <button
+                  className="admin-danger-button"
+                  type="button"
+                  disabled={busy || session.is_open}
+                  title={session.is_open ? 'Close this session before deleting it.' : undefined}
+                  onClick={() => handleDeleteSession(session)}
+                >
+                  Delete session
+                </button>
+              </div>
               <ol>
                 {questions
                   .filter((question) => question.session_id === session.id)
                   .sort((left, right) => left.position - right.position)
-                  .map((question) => <li key={question.id}>{question.prompt}</li>)}
+                  .map((question) => (
+                    <li key={question.id}>
+                      <span>{question.prompt}</span>
+                      <button
+                        className="admin-danger-button"
+                        type="button"
+                        disabled={busy || session.is_open}
+                        title={session.is_open ? 'Close this session before deleting questions.' : undefined}
+                        onClick={() => handleDeleteQuestion(question)}
+                      >
+                        Delete question
+                      </button>
+                    </li>
+                  ))}
               </ol>
             </article>
           ))}
@@ -215,6 +276,35 @@ export function AdminDashboard() {
             </fieldset>
             <button type="submit" disabled={busy}>Add question</button>
           </form>
+        )}
+      </section>
+
+      <section className="admin-panel admin-danger-zone">
+        <p className="eyebrow">Danger zone</p>
+        <h2>Wipe collected participant data</h2>
+        <p>
+          Permanently delete every submitted response and pseudonymous participant UUID.
+          Sessions and questions remain. Close every open session first. Export the CSV
+          before continuing if you need a backup.
+        </p>
+        <label>
+          Type <strong>WIPE DATA</strong> to confirm
+          <input
+            value={wipeConfirmation}
+            onChange={(event) => setWipeConfirmation(event.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <button
+          className="admin-danger-button"
+          type="button"
+          disabled={busy || wipeConfirmation !== 'WIPE DATA' || sessions.some((session) => session.is_open)}
+          onClick={handleWipeCollectedData}
+        >
+          Permanently wipe collected data
+        </button>
+        {sessions.some((session) => session.is_open) && (
+          <p className="admin-danger-help">Close the open session before wiping data.</p>
         )}
       </section>
     </main>

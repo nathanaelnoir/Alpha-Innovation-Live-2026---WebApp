@@ -5,6 +5,8 @@ from fastapi.responses import JSONResponse
 from app.core.exceptions import (
     ActiveQuestionNotFoundError,
     ActiveSessionNotFoundError,
+    CollectedDataPersistenceError,
+    CollectedDataWipeConflictError,
     EmptySurveySessionError,
     InvalidParticipantTokenError,
     OrganizerTokenConfigurationError,
@@ -19,6 +21,7 @@ from app.core.exceptions import (
     ResponsePersistenceError,
     ResultsExportError,
     ResultsTokenConfigurationError,
+    SurveySessionDeletionConflictError,
     SurveySessionNotEditableError,
     SurveySessionNotFoundError,
     SurveySessionPersistenceError,
@@ -67,6 +70,36 @@ def register_exception_handlers(app: FastAPI) -> None:
             status.HTTP_409_CONFLICT,
             "session_not_editable",
             "Close the session before adding questions.",
+        )
+
+    @app.exception_handler(SurveySessionDeletionConflictError)
+    async def survey_session_deletion_conflict_error(
+        _request: Request, _error: SurveySessionDeletionConflictError
+    ) -> JSONResponse:
+        return _error_response(
+            status.HTTP_409_CONFLICT,
+            "session_deletion_conflict",
+            "Close the session before deleting it or any of its questions.",
+        )
+
+    @app.exception_handler(CollectedDataWipeConflictError)
+    async def collected_data_wipe_conflict_error(
+        _request: Request, _error: CollectedDataWipeConflictError
+    ) -> JSONResponse:
+        return _error_response(
+            status.HTTP_409_CONFLICT,
+            "collected_data_wipe_conflict",
+            "Close the active session before wiping collected participant data.",
+        )
+
+    @app.exception_handler(CollectedDataPersistenceError)
+    async def collected_data_persistence_error(
+        _request: Request, _error: CollectedDataPersistenceError
+    ) -> JSONResponse:
+        return _error_response(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "collected_data_wipe_failed",
+            "Collected participant data could not be wiped. Please try again.",
         )
 
     @app.exception_handler(SurveySessionRetrievalError)

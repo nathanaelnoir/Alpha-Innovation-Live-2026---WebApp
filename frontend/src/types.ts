@@ -49,3 +49,8 @@ export interface AdminQuestion extends ActiveQuestion {
   session_id: string
   is_active: boolean
 }
+
+export interface CollectedDataWipeResult {
+  responses_deleted: number
+  participants_deleted: number
+}

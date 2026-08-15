@@ -82,9 +82,21 @@ class SurveySessionNotEditableError(ApplicationError):
     """Questions cannot be added to an open survey session."""
 
 
+class SurveySessionDeletionConflictError(ApplicationError):
+    """An open survey session or one of its questions cannot be deleted."""
+
+
 class SurveySessionRetrievalError(ApplicationError):
     """Survey session data could not be retrieved."""
 
 
 class SurveySessionPersistenceError(ApplicationError):
     """A survey session change could not be durably stored."""
+
+
+class CollectedDataWipeConflictError(ApplicationError):
+    """Collected data cannot be wiped while a survey session is open."""
+
+
+class CollectedDataPersistenceError(ApplicationError):
+    """Collected participant data could not be deleted safely."""
