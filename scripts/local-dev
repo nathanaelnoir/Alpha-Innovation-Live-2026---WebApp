@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+backend_dir="${project_dir}/backend"
+frontend_dir="${project_dir}/frontend"
+
+if [[ ! -x "${backend_dir}/.venv/bin/uvicorn" ]]; then
+    echo "Backend dependencies are missing. Follow README.md > Local setup first." >&2
+    exit 1
+fi
+if [[ ! -d "${frontend_dir}/node_modules" ]]; then
+    echo "Frontend dependencies are missing. Follow README.md > Local setup first." >&2
+    exit 1
+fi
+
+if ! "${backend_dir}/scripts/local-postgres" status >/dev/null 2>&1; then
+    "${backend_dir}/scripts/local-postgres" start
+fi
+
+(
+    cd "${backend_dir}"
+    .venv/bin/alembic upgrade head
+)
+
+backend_pid=""
+frontend_pid=""
+cleanup() {
+    [[ -z "${backend_pid}" ]] || kill "${backend_pid}" 2>/dev/null || true
+    [[ -z "${frontend_pid}" ]] || kill "${frontend_pid}" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+(
+    cd "${backend_dir}"
+    exec .venv/bin/uvicorn app.main:app --reload
+) &
+backend_pid="$!"
+
+(
+    cd "${frontend_dir}"
+    exec npm run dev
+) &
+frontend_pid="$!"
+
+echo "Participant survey: http://localhost:5173"
+echo "Organizer dashboard: http://localhost:5173/admin"
+echo "API documentation: http://localhost:8000/docs"
+echo "Press Ctrl-C to stop both application processes."
+
+wait -n "${backend_pid}" "${frontend_pid}"

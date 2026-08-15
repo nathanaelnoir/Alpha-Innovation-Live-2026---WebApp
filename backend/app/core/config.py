@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def require_psycopg_database_url(cls, value: str) -> str:
+        # Render supplies its internal connection URL as ``postgresql://``.
+        # Make the selected SQLAlchemy/Psycopg dialect explicit without asking
+        # operators to split a generated secret connection string into parts.
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        if value.startswith("postgres://"):
+            return value.replace("postgres://", "postgresql+psycopg://", 1)
         if not value.startswith("postgresql+psycopg://"):
             message = "DATABASE_URL must use the postgresql+psycopg dialect"
             raise ValueError(message)

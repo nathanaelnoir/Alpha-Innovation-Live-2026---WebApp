@@ -9,6 +9,18 @@ def test_database_url_requires_psycopg_dialect() -> None:
         Settings(database_url="postgresql+asyncpg://localhost/survey", _env_file=None)
 
 
+@pytest.mark.parametrize("scheme", ["postgresql", "postgres"])
+def test_database_url_normalizes_hosted_postgresql_urls(scheme: str) -> None:
+    settings = Settings(
+        database_url=f"{scheme}://survey:secret@database.internal/survey",
+        _env_file=None,
+    )
+
+    assert settings.database_url == (
+        "postgresql+psycopg://survey:secret@database.internal/survey"
+    )
+
+
 def test_production_requires_strong_secrets() -> None:
     with pytest.raises(ValidationError, match="Production requires secrets"):
         Settings(app_env="production", _env_file=None)

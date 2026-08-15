@@ -4,6 +4,28 @@ Anonymous, interactive two-dimensional conference survey. The project is being
 built incrementally as two applications: a FastAPI/PostgreSQL backend and a
 React/Vite frontend.
 
+## Run locally in this workspace
+
+The dependencies, ignored development environment files, and workspace-local
+PostgreSQL runtime are already present here. Start the complete application from
+the repository root with:
+
+```bash
+scripts/local-dev
+```
+
+Then open:
+
+- Participant survey: <http://localhost:5173>
+- Organizer dashboard: <http://localhost:5173/admin>
+- API documentation: <http://localhost:8000/docs>
+
+The organizer dashboard uses the local-only `RESULTS_EXPORT_TOKEN` in
+`backend/.env`. The launcher starts PostgreSQL when necessary, applies every
+Alembic migration, and runs the frontend and backend together. `Ctrl-C` stops
+both application processes; the local database continues running so responses
+remain available. Stop it separately with `backend/scripts/local-postgres stop`.
+
 ## Current implementation
 
 The repository contains a FastAPI/PostgreSQL backend and a mobile-first
@@ -147,13 +169,13 @@ are configured.
 ### Checks
 
 ```bash
-cd backend
-ruff check .
-ruff format --check .
-mypy app
-pytest
-alembic check
+scripts/check
 ```
+
+The root check script runs Ruff, formatting, Mypy, all backend tests against the
+isolated PostgreSQL test database, the migration drift check, ESLint, all
+frontend tests, and the Vite production build. Backend integration tests apply
+pending migrations to the `_test` database before executing.
 
 Persistence and migration execution require a real PostgreSQL database. The
 integration tests use `TEST_DATABASE_URL`; SQLite is not used as a substitute.
@@ -164,7 +186,8 @@ Run the PostgreSQL integration suite with an explicitly isolated test database:
 TEST_DATABASE_URL=postgresql+psycopg://lab@127.0.0.1:55432/conference_survey_test pytest
 ```
 
-The integration fixture refuses database names that do not end in `_test`.
+The integration fixture refuses database names that do not end in `_test` and
+automatically runs `alembic upgrade head` against that isolated database.
 
 ### Workspace-local PostgreSQL
 
@@ -214,3 +237,69 @@ npm run lint
 npm run test
 npm run build
 ```
+
+## End-to-end and burst verification
+
+With `scripts/local-dev` running in another terminal, verify a complete API
+happy path (health check, organizer setup, participant creation, idempotent
+response retry, CSV export, and session close):
+
+```bash
+cd backend
+.venv/bin/python scripts/verify-live.py
+```
+
+Run the repeatable conference-size burst with 250 independently created
+participants and up to 50 concurrent flows:
+
+```bash
+cd backend
+.venv/bin/python scripts/verify-live.py --participants 250 --concurrency 50
+```
+
+The command fails unless every accepted participant has exactly one matching
+CSV row after retrying the same response. It creates uniquely named verification
+data, closes its session, and restores the previously open session after success;
+stored responses intentionally remain in PostgreSQL. Reopening a prior session
+starts a new survey run, so use this only against local or staging data—not
+during a live event.
+
+Last verified in this workspace on 2026-08-15:
+
+- `.venv/bin/python scripts/verify-live.py`: 1 participant passed.
+- `.venv/bin/python scripts/verify-live.py --participants 250 --concurrency 50`:
+  250 unique responses, idempotent retries, and 250 matching CSV rows passed.
+
+## Deploy on Render
+
+The root [`render.yaml`](render.yaml) is a Render Blueprint for three resources:
+
+- `conference-survey-web`: a Vite static site rooted at `frontend/`
+- `conference-survey-api`: a native Python web service rooted at `backend/`
+- `conference-survey-db`: private managed PostgreSQL in the same Frankfurt region
+
+The Blueprint builds each application independently, runs `alembic upgrade head`
+when the single-instance free backend starts, configures `/health`, generates
+both application secrets, connects the backend to PostgreSQL's internal URL,
+connects each public service URL to the other, and rewrites frontend routes so
+`/admin` works on a static host. No database credentials or application secrets
+are committed.
+
+To deploy:
+
+1. Push this repository to GitHub, GitLab, or Bitbucket.
+2. In Render, create a new Blueprint and select the repository.
+3. Review the three resources and apply the Blueprint.
+4. After deployment, open the backend service's environment settings and copy
+   the generated `RESULTS_EXPORT_TOKEN` for organizer use. Do not expose it to
+   participants or add it to any `VITE_` variable.
+5. Open the frontend URL and verify both `/` and `/admin`; check the backend URL
+   at `/health` and `/docs`.
+
+The backend and database are explicitly pinned to Render's Free instance types;
+the static frontend is also free. Review Render's current limits before creating
+the resources. In particular, free PostgreSQL expires after 30 days and has no
+backups, and a free backend sleeps after 15 idle minutes. Upgrade both resources
+before using this for a real conference. The database blocks direct public
+connections; use Render's private network through the backend for normal
+operation.

@@ -42,7 +42,7 @@ async def test_migrations_and_initial_seed_are_present(
     active_question = await get_active_question(db_session)
     active_session = await get_active_session(db_session)
 
-    assert revision == "20260805_0006"
+    assert revision == "20260806_0008"
     assert active_question.id == INITIAL_QUESTION_ID
     assert active_question.prompt == "How are you experiencing this session right now?"
     assert active_question.prompt_de == "Wie erleben Sie diese Sitzung gerade?"
