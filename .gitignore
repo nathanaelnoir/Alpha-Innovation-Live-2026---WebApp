@@ -16,3 +16,6 @@ backend/.pgdata/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+presentation/node_modules/
+presentation/dist/
+presentation/.env

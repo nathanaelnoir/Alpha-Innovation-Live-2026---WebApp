@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         "postgresql+psycopg://postgres:postgres@localhost:5432/conference_survey"
     )
     frontend_origin: AnyHttpUrl = AnyHttpUrl("http://localhost:5173")
+    presentation_origin: AnyHttpUrl | None = None
     participant_token_secret: SecretStr | None = None
     results_export_token: SecretStr | None = None
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"

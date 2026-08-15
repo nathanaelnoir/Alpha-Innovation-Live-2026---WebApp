@@ -14,6 +14,9 @@ from app.db.session import create_database_engine, create_session_factory
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     app_settings = settings or get_settings()
+    allowed_origins = [str(app_settings.frontend_origin).rstrip("/")]
+    if app_settings.presentation_origin is not None:
+        allowed_origins.append(str(app_settings.presentation_origin).rstrip("/"))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -37,7 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = app_settings
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(app_settings.frontend_origin).rstrip("/")],
+        allow_origins=allowed_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
