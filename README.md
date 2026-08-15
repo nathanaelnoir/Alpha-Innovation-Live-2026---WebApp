@@ -18,13 +18,15 @@ Then open:
 
 - Participant survey: <http://localhost:5173>
 - Organizer dashboard: <http://localhost:5173/admin>
+- Presentation: <http://localhost:5174>
 - API documentation: <http://localhost:8000/docs>
 
 The organizer dashboard uses the local-only `RESULTS_EXPORT_TOKEN` in
 `backend/.env`. The launcher starts PostgreSQL when necessary, applies every
-Alembic migration, and runs the frontend and backend together. `Ctrl-C` stops
-both application processes; the local database continues running so responses
-remain available. Stop it separately with `backend/scripts/local-postgres stop`.
+Alembic migration, and runs the participant frontend, presentation, and backend
+together. `Ctrl-C` stops all application processes; the local database continues
+running so responses remain available. Stop it separately with
+`backend/scripts/local-postgres stop`.
 
 ## Current implementation
 
@@ -66,6 +68,8 @@ Available endpoints:
 - `PUT /api/v1/questions/{question_id}/response`
 - `GET /api/v1/results.csv` (organizer Bearer token required)
 - `DELETE /api/v1/admin/collected-data` (organizer token required)
+- `GET /api/v1/presentation/active` (organizer token required)
+- `GET /api/v1/presentation/all` (organizer token required)
 
 The results download uses semicolons as its CSV delimiter so it opens into
 separate columns in Excel installations that use European regional settings.
@@ -157,6 +161,15 @@ be closed, and the organizer must type `WIPE DATA` and accept a final warning.
 Export the CSV first if the data must be retained. Browsers whose participant
 identity was wiped automatically obtain a fresh pseudonymous identity when they
 next attempt to submit.
+
+### Presentation
+
+Open the presentation service and enter `RESULTS_EXPORT_TOKEN` as the master
+keyword. The keyword is sent only to the protected backend endpoint and is not
+stored by the page or included in the static frontend build. The presentation
+loads every question with stored responses across all sessions in session and
+question order. Sessions may remain closed; opening them is only necessary when
+participants should be allowed to answer.
 
 ### Backend setup
 
@@ -287,6 +300,7 @@ Last verified in this workspace on 2026-08-15:
 The root [`render.yaml`](render.yaml) is a Render Blueprint for three resources:
 
 - `conference-survey-web`: a Vite static site rooted at `frontend/`
+- `conference-survey-presentation`: a Vite static site rooted at `presentation/`
 - `conference-survey-api`: a native Python web service rooted at `backend/`
 - `conference-survey-db`: private managed PostgreSQL in the same Frankfurt region
 
@@ -305,8 +319,9 @@ To deploy:
 4. After deployment, open the backend service's environment settings and copy
    the generated `RESULTS_EXPORT_TOKEN` for organizer use. Do not expose it to
    participants or add it to any `VITE_` variable.
-5. Open the frontend URL and verify both `/` and `/admin`; check the backend URL
-   at `/health` and `/docs`.
+5. Open the frontend URL and verify both `/` and `/admin`; open the presentation
+   URL and verify the master keyword; check the backend URL at `/health` and
+   `/docs`.
 
 The backend and database are explicitly pinned to Render's Free instance types;
 the static frontend is also free. Review Render's current limits before creating

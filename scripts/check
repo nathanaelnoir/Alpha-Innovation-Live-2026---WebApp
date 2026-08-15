@@ -24,3 +24,8 @@ fi
     npm run test
     npm run build
 )
+
+(
+    cd "${project_dir}/presentation"
+    npm run build
+)

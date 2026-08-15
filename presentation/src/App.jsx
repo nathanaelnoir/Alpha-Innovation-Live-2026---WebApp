@@ -128,6 +128,7 @@ function validateDataset(raw) {
     question: raw.question.trim(),
     translations: raw.translations ?? null,
     axisLabels: raw.axisLabels ?? null,
+    sessionTitle: raw.sessionTitle ?? null,
     points,
     dropped,
   };
@@ -148,6 +149,7 @@ function presentationToDatasets(presentation) {
       x: question.x_axis_label,
       y: question.y_axis_label,
     },
+    sessionTitle: presentation.title,
     points: question.points.map((point) => ({
       x: Number(point.x) * 2 - 1,
       y: Number(point.y) * 2 - 1,
@@ -155,8 +157,8 @@ function presentationToDatasets(presentation) {
   }));
 }
 
-async function fetchPresentation(token) {
-  const response = await fetch(`${API_BASE_URL}/api/v1/presentation/active`, {
+async function fetchPresentations(token) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/presentation/all`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -1258,7 +1260,7 @@ function SessionApp({ initialSource, sessionTitle }) {
     <section className="stage">
       {state === "closing" ? <div className="closing"><p>Every point was present.</p><h1>Thank you for listening.</h1></div> : <>
         <div className="question-wrap">
-          <p className="eyebrow">{sessionTitle} – Question {String(dataset.position ?? datasetIndex + 1).padStart(2, "0")}</p>
+          <p className="eyebrow">{dataset.sessionTitle ?? sessionTitle} – Question {String(dataset.position ?? datasetIndex + 1).padStart(2, "0")}</p>
           <h1>{getQuestionTranslations(dataset).map(([language, question]) => <span className="translation" key={language}><b>{language}</b><span>{question}</span></span>)}</h1>
         </div>
         <Plot dataset={dataset} state={state} visualRef={visualRef} clearStartedAt={clearStartedAt} coordinateRevealStartedAt={coordinateRevealStartedAt} reducedMotion={reducedMotion} />
@@ -1279,11 +1281,11 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const payload = await fetchPresentation(token.trim());
-      const datasets = presentationToDatasets(payload).map(validateDataset).filter(Boolean);
+      const payload = await fetchPresentations(token.trim());
+      const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
       const usable = datasets.filter((dataset) => dataset.points.length >= MIN_POINTS);
-      if (!usable.length) throw new Error(`The active session has no question with at least ${MIN_POINTS} responses.`);
-      setPresentation({ title: payload.title, datasets: usable });
+      if (!usable.length) throw new Error(`No session has a question with at least ${MIN_POINTS} responses.`);
+      setPresentation({ title: "All sessions", datasets: usable });
       setToken("");
     } catch (connectionError) {
       setError(connectionError.message);
@@ -1298,9 +1300,9 @@ export default function App() {
       <form className="access-panel" onSubmit={connect}>
         <span className="access-kicker"><i /> ALPHA INNOVATION LIVE 2026</span>
         <h1>Presentation access</h1>
-        <p>Enter the organizer token to load anonymized questions, labels, and coordinate data.</p>
-        <label>Organizer token<input type="password" value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" autoFocus /></label>
-        <button type="submit" disabled={loading}>{loading ? "Loading data…" : "Load session"}</button>
+        <p>Enter the master organizer keyword to load every session's anonymized presentation data. Sessions do not need to be open.</p>
+        <label>Master keyword<input type="password" value={token} onChange={(event) => setToken(event.target.value)} autoComplete="off" autoFocus /></label>
+        <button type="submit" disabled={loading}>{loading ? "Loading data…" : "Load all presentations"}</button>
         {error && <output>{error}</output>}
       </form>
     </main>;

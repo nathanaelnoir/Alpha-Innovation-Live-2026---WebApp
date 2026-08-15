@@ -5,7 +5,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ActiveSessionNotFoundError, SurveySessionRetrievalError
-from app.repositories.presentation import list_presentation_points
+from app.models.question import Question
+from app.models.survey_session import SurveySession
+from app.repositories.presentation import (
+    list_presentation_points,
+    list_presentation_sessions,
+)
 from app.repositories.survey_sessions import get_active_session
 from app.schemas.presentation import (
     ActivePresentation,
@@ -16,26 +21,11 @@ from app.schemas.presentation import (
 logger = logging.getLogger(__name__)
 
 
-async def get_active_presentation(session: AsyncSession) -> ActivePresentation:
-    try:
-        async with session.begin():
-            result = await get_active_session(session)
-            if result is None:
-                raise ActiveSessionNotFoundError
-            survey_session, questions = result
-            point_rows = await list_presentation_points(
-                session, [question.id for question in questions]
-            )
-    except SQLAlchemyError as error:
-        logger.error("active_presentation_retrieval_failed")
-        raise SurveySessionRetrievalError from error
-
-    points_by_question: dict[uuid.UUID, list[PresentationPoint]] = {
-        question.id: [] for question in questions
-    }
-    for row in point_rows:
-        points_by_question[row.question_id].append(PresentationPoint(x=row.x, y=row.y))
-
+def _build_presentation(
+    survey_session: SurveySession,
+    questions: list[Question],
+    points_by_question: dict[uuid.UUID, list[PresentationPoint]],
+) -> ActivePresentation:
     return ActivePresentation(
         id=survey_session.id,
         run_id=survey_session.current_run_id,
@@ -58,3 +48,54 @@ async def get_active_presentation(session: AsyncSession) -> ActivePresentation:
             for question in questions
         ],
     )
+
+
+async def get_active_presentation(session: AsyncSession) -> ActivePresentation:
+    try:
+        async with session.begin():
+            result = await get_active_session(session)
+            if result is None:
+                raise ActiveSessionNotFoundError
+            survey_session, questions = result
+            point_rows = await list_presentation_points(
+                session, [question.id for question in questions]
+            )
+    except SQLAlchemyError as error:
+        logger.error("active_presentation_retrieval_failed")
+        raise SurveySessionRetrievalError from error
+
+    points_by_question: dict[uuid.UUID, list[PresentationPoint]] = {
+        question.id: [] for question in questions
+    }
+    for row in point_rows:
+        points_by_question[row.question_id].append(PresentationPoint(x=row.x, y=row.y))
+
+    return _build_presentation(survey_session, questions, points_by_question)
+
+
+async def get_all_presentations(session: AsyncSession) -> list[ActivePresentation]:
+    try:
+        async with session.begin():
+            session_records = await list_presentation_sessions(session)
+            questions = [
+                question
+                for _survey_session, session_questions in session_records
+                for question in session_questions
+            ]
+            point_rows = await list_presentation_points(
+                session, [question.id for question in questions]
+            )
+    except SQLAlchemyError as error:
+        logger.error("all_presentations_retrieval_failed")
+        raise SurveySessionRetrievalError from error
+
+    points_by_question: dict[uuid.UUID, list[PresentationPoint]] = {
+        question.id: [] for question in questions
+    }
+    for row in point_rows:
+        points_by_question[row.question_id].append(PresentationPoint(x=row.x, y=row.y))
+
+    return [
+        _build_presentation(survey_session, session_questions, points_by_question)
+        for survey_session, session_questions in session_records
+    ]

@@ -13,7 +13,7 @@ from app.db.session import get_session
 from app.main import create_app
 from app.models.question import Question
 from app.models.survey_session import SurveySession
-from app.services.presentation import get_active_presentation
+from app.services.presentation import get_active_presentation, get_all_presentations
 
 ORGANIZER_TOKEN = "organizer-results-token-with-32-characters"
 
@@ -82,12 +82,41 @@ async def test_active_presentation_is_anonymized_and_ordered() -> None:
     assert "responses.participant_id" not in compiled
 
 
+@pytest.mark.asyncio
+async def test_all_presentations_include_closed_sessions_in_order() -> None:
+    first_session, first_question = presentation_records()
+    first_session.is_open = False
+    first_session.title = "Closed morning session"
+    second_session, second_question = presentation_records()
+    second_session.title = "Closed afternoon session"
+    second_session.is_open = False
+    second_question.session_id = second_session.id
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.side_effect = [
+        questions_result([first_session, second_session]),
+        questions_result([first_question, second_question]),
+        points_result(
+            [
+                (first_question.id, 0.25, 0.75),
+                (second_question.id, 0.5, 0.5),
+            ]
+        ),
+    ]
+
+    result = await get_all_presentations(session)
+
+    assert [presentation.title for presentation in result] == [
+        "Closed morning session",
+        "Closed afternoon session",
+    ]
+    assert result[0].questions[0].points[0].model_dump() == {"x": 0.25, "y": 0.75}
+    assert result[1].questions[0].points[0].model_dump() == {"x": 0.5, "y": 0.5}
+
+
 async def request_presentation(
-    session: AsyncSession, token: str | None
+    session: AsyncSession, token: str | None, path: str = "/active"
 ) -> httpx.Response:
-    app = create_app(
-        Settings(results_export_token=ORGANIZER_TOKEN, _env_file=None)
-    )
+    app = create_app(Settings(results_export_token=ORGANIZER_TOKEN, _env_file=None))
 
     async def override_session() -> AsyncIterator[AsyncSession]:
         yield session
@@ -96,7 +125,7 @@ async def request_presentation(
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        return await client.get("/api/v1/presentation/active", headers=headers)
+        return await client.get(f"/api/v1/presentation{path}", headers=headers)
 
 
 @pytest.mark.asyncio
@@ -124,3 +153,30 @@ async def test_presentation_endpoint_excludes_identifiers() -> None:
     assert point == {"x": 0.25, "y": 0.75}
     assert "participant_id" not in point
     assert "response_id" not in point
+
+
+@pytest.mark.asyncio
+async def test_all_presentations_endpoint_requires_master_organizer_token() -> None:
+    response = await request_presentation(
+        AsyncMock(spec=AsyncSession), None, path="/all"
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "unauthorized_organizer_access"
+
+
+@pytest.mark.asyncio
+async def test_all_presentations_endpoint_does_not_require_an_open_session() -> None:
+    survey_session, question = presentation_records()
+    survey_session.is_open = False
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.side_effect = [
+        questions_result([survey_session]),
+        questions_result([question]),
+        points_result([(question.id, 0.25, 0.75)]),
+    ]
+
+    response = await request_presentation(session, ORGANIZER_TOKEN, path="/all")
+
+    assert response.status_code == 200
+    assert response.json()[0]["title"] == "Session 01"
