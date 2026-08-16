@@ -3,15 +3,15 @@ export function ArtworkBrand() {
     <a
       className="brand artwork-brand"
       href="/"
-      aria-label="eigenvalue.space at Alpha Innovation Live 2026 home"
+      aria-label="Alpha Innovation Live 2026 with eigenvalue:space home"
     >
       <span className="artwork-brand__viewport" aria-hidden="true">
         <span className="artwork-brand__track">
           <span className="artwork-brand__title">
-            eigenvalue.space × ALPHA INNOVATION LIVE 2026
+            ALPHA INNOVATION LIVE 2026 × eigenvalue:space
           </span>
           <span className="artwork-brand__title">
-            eigenvalue.space × ALPHA INNOVATION LIVE 2026
+            ALPHA INNOVATION LIVE 2026 × eigenvalue:space
           </span>
         </span>
       </span>

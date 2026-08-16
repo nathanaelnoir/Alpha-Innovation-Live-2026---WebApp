@@ -8,7 +8,7 @@ describe('ArtworkBrand', () => {
 
     expect(
       screen.getByRole('link', {
-        name: 'eigenvalue.space at Alpha Innovation Live 2026 home',
+        name: 'Alpha Innovation Live 2026 with eigenvalue:space home',
       }),
     ).toHaveAttribute('href', '/')
     expect(container.querySelectorAll('.artwork-brand__title')).toHaveLength(2)
