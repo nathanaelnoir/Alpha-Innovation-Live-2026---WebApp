@@ -48,10 +48,12 @@ const accepted: ResponseAccepted = {
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
+    reject = rejectPromise
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 async function renderReadyApp(activeSession = surveySession) {
@@ -240,6 +242,43 @@ describe('App', () => {
 
     await act(async () => refresh.resolve(surveySession))
     expect(await screen.findByRole('heading', { name: question.prompt })).toBeInTheDocument()
+  })
+
+  it('shows three seconds of loading feedback when a manual check finds no session', async () => {
+    mockedCreateParticipant.mockResolvedValue(participant)
+    mockedGetActiveSession.mockRejectedValueOnce(
+      new ApiError('There is no open session right now.', 404, 'active_session_not_found'),
+    )
+    render(<App />)
+    expect(
+      await screen.findByRole('heading', { name: 'Waiting for the next session' }),
+    ).toBeInTheDocument()
+
+    const refresh = deferred<ActiveSurveySession>()
+    mockedGetActiveSession.mockReturnValueOnce(refresh.promise)
+    vi.useFakeTimers()
+    try {
+      fireEvent.click(screen.getByRole('button', { name: 'Check again' }))
+      await act(async () =>
+        refresh.reject(
+          new ApiError(
+            'There is no open session right now.',
+            404,
+            'active_session_not_found',
+          ),
+        ),
+      )
+
+      expect(screen.getByTestId('loading-stream')).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(2_999))
+      expect(screen.getByTestId('loading-stream')).toBeInTheDocument()
+      act(() => vi.advanceTimersByTime(1))
+      expect(
+        screen.getByRole('heading', { name: 'Waiting for the next session' }),
+      ).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('switches question, labels, interface text, and language preference', async () => {

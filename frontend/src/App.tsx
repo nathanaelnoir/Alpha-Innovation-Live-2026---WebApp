@@ -29,9 +29,15 @@ type LoadState = 'loading' | 'ready' | 'completed' | 'empty' | 'error'
 type SubmitState = 'idle' | 'selected' | 'submitting' | 'error'
 type MessageKey = '' | 'loadError' | 'responseError'
 
+interface LoadSurveyOptions {
+  showLoading?: boolean
+  emptyFeedbackMs?: number
+}
+
 const ACTIVE_POLL_INTERVAL_MS = 5_000
 const WAITING_POLL_INTERVAL_MS = 15_000
 const POLL_JITTER_MS = 2_000
+const MANUAL_EMPTY_FEEDBACK_MS = 3_000
 
 function readableAxisLabel(label: string | null, fallback: string): string {
   return label?.replace(/\s*\([^)]*\)/g, '').trim() || fallback
@@ -54,9 +60,12 @@ export default function App() {
   const questionRef = useRef<ActiveQuestion | null>(null)
   const loadControllerRef = useRef<AbortController | null>(null)
   const submitControllerRef = useRef<AbortController | null>(null)
+  const emptyFeedbackTimerRef = useRef<number | undefined>(undefined)
 
-  const loadSurvey = useCallback(async (showLoading = true) => {
+  const loadSurvey = useCallback(async (options: LoadSurveyOptions = {}) => {
+    const { showLoading = true, emptyFeedbackMs = 0 } = options
     loadControllerRef.current?.abort()
+    window.clearTimeout(emptyFeedbackTimerRef.current)
     const controller = new AbortController()
     loadControllerRef.current = controller
     if (showLoading) {
@@ -105,7 +114,15 @@ export default function App() {
         sessionRef.current = null
         setSurveySession(null)
         setQuestion(null)
-        setLoadState('empty')
+        if (emptyFeedbackMs > 0) {
+          setLoadState('loading')
+          setMessage('')
+          emptyFeedbackTimerRef.current = window.setTimeout(() => {
+            setLoadState('empty')
+          }, emptyFeedbackMs)
+        } else {
+          setLoadState('empty')
+        }
       } else if (showLoading) {
         setMessage('loadError')
         setLoadState('error')
@@ -116,7 +133,10 @@ export default function App() {
   useEffect(() => {
     if (loadingPreview) return
     void loadSurvey()
-    return () => loadControllerRef.current?.abort()
+    return () => {
+      loadControllerRef.current?.abort()
+      window.clearTimeout(emptyFeedbackTimerRef.current)
+    }
   }, [loadSurvey, loadingPreview])
 
   useEffect(() => {
@@ -132,14 +152,14 @@ export default function App() {
         : WAITING_POLL_INTERVAL_MS
       const delay = interval + Math.floor(Math.random() * POLL_JITTER_MS)
       timer = window.setTimeout(() => {
-        void loadSurvey(false).finally(schedulePoll)
+        void loadSurvey({ showLoading: false }).finally(schedulePoll)
       }, delay)
     }
 
     const handleVisibilityChange = () => {
       window.clearTimeout(timer)
       if (document.visibilityState === 'visible') {
-        void loadSurvey(false).finally(schedulePoll)
+        void loadSurvey({ showLoading: false }).finally(schedulePoll)
       }
     }
 
@@ -199,7 +219,7 @@ export default function App() {
         clearParticipantIdentity()
         identityRef.current = null
         setIdentity(null)
-        await loadSurvey(false)
+        await loadSurvey({ showLoading: false })
       }
       setSubmitState('error')
       setMessage('responseError')
@@ -271,7 +291,16 @@ export default function App() {
               <p className="eyebrow">{text.waitingEyebrow}</p>
               <h1>{text.waitingTitle}</h1>
               <p>{text.waitingBody}</p>
-              <button className="secondary-button" type="button" onClick={() => void loadSurvey(false)}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() =>
+                  void loadSurvey({
+                    showLoading: false,
+                    emptyFeedbackMs: MANUAL_EMPTY_FEEDBACK_MS,
+                  })
+                }
+              >
                 {text.checkAgain}
               </button>
             </div>
