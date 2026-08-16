@@ -311,6 +311,13 @@ h1 {
 .center-state { min-height: calc(100dvh - 105px); padding: 40px 22px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 .center-state h1 { max-width: 620px; text-transform: uppercase; }
 .center-state > p:not(.eyebrow) { max-width: 500px; color: #777; font-size: .65rem; line-height: 1.7; letter-spacing: .06em; text-transform: uppercase; }
+
+.survey-card--device-gate::before { display: none; }
+.device-gate { gap: 18px; }
+.device-gate > .eyebrow, .device-gate > p { margin: 0; }
+.device-gate__translations { display: grid; gap: 8px; max-width: 560px; color: #777; font-size: .65rem; line-height: 1.7; letter-spacing: .04em; text-transform: uppercase; }
+.device-gate__translations p { margin: 0; }
+.device-gate__address { padding: 9px 12px; border: 1px solid rgba(255,255,255,.35); color: var(--white); background: #090909; font-size: clamp(.75rem, 2vw, 1rem); letter-spacing: .08em; }
 .state-icon { display: grid; place-items: center; width: 50px; height: 50px; margin-bottom: 22px; border: 1px solid var(--blue); color: var(--blue); font-size: 1.2rem; }
 .center-state--loading { position: relative; overflow: hidden; isolation: isolate; padding: 0; }
 .loading-stream { z-index: 0; }

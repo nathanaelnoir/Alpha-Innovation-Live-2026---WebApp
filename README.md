@@ -314,6 +314,11 @@ Render-provided URL. Both static applications call the custom API domain, while
 the backend allows the participant custom origin and the presentation Render
 origin through CORS.
 
+The participant route admits touch-capable phones and tablets and shows a
+mobile-device notice on traditional fine-pointer desktop and laptop browsers.
+The organizer dashboard at `/admin` and the separate presentation application
+are not subject to this participant device gate.
+
 The Blueprint builds each application independently, runs `alembic upgrade head`
 when the single-instance Starter backend starts, configures `/health`, generates
 both application secrets, connects the backend to PostgreSQL's internal URL,
