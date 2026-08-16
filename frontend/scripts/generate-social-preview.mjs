@@ -35,12 +35,9 @@ const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect width="${WIDTH}" height="${HEIGHT}" fill="#050505"/>
   <g fill="none" stroke="#f1f1ed" stroke-opacity="0.035">${grid.join('')}</g>
-  <path d="M52 48H1148" stroke="#f1f1ed" stroke-opacity="0.32"/>
-  <text x="52" y="82" fill="#858585" font-family="monospace" font-size="14" letter-spacing="3">INTERACTIVE AUDIENCE ARTWORK</text>
   <g fill="#f1f1ed">${particles.join('')}</g>
   <path d="M52 535H1148" stroke="#365bd8" stroke-width="2"/>
-  <text x="52" y="588" fill="#858585" font-family="monospace" font-size="16" letter-spacing="2">ALPHA INNOVATION LIVE 2026</text>
-  <text x="1148" y="588" fill="#f1f1ed" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" letter-spacing="-1" text-anchor="end">× eigenvalue:space</text>
+  <text x="600" y="588" fill="#f1f1ed" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" letter-spacing="-0.5" text-anchor="middle">ALPHA INNOVATION LIVE 2026 × eigenvalue:space</text>
 </svg>`
 
 await mkdir(dirname(outputPath), { recursive: true })

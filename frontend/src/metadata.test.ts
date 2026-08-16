@@ -22,6 +22,12 @@ describe('participant page metadata', () => {
     expect(indexHtml).toContain(
       '<meta name="twitter:card" content="summary_large_image" />',
     )
+    expect(indexHtml).toContain(
+      '<meta property="og:description" content="Where individual signals become a space." />',
+    )
+    expect(indexHtml).toContain(
+      '<meta name="twitter:description" content="Where individual signals become a space." />',
+    )
     expect(indexHtml.toLowerCase()).not.toContain('session pulse')
   })
 
