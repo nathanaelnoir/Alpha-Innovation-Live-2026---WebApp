@@ -304,8 +304,14 @@ The root [`render.yaml`](render.yaml) is a Render Blueprint for three resources:
 - `conference-survey-api`: a native Python web service rooted at `backend/`
 - `conference-survey-db`: private managed PostgreSQL in the same Frankfurt region
 
+The participant site uses `https://eigenvalue.space`, and the API uses
+`https://api.eigenvalue.space`. The presentation intentionally remains on its
+Render-provided URL. Both static applications call the custom API domain, while
+the backend allows the participant custom origin and the presentation Render
+origin through CORS.
+
 The Blueprint builds each application independently, runs `alembic upgrade head`
-when the single-instance free backend starts, configures `/health`, generates
+when the single-instance Starter backend starts, configures `/health`, generates
 both application secrets, connects the backend to PostgreSQL's internal URL,
 connects each public service URL to the other, and rewrites frontend routes so
 `/admin` works on a static host. No database credentials or application secrets
@@ -323,10 +329,15 @@ To deploy:
    URL and verify the master keyword; check the backend URL at `/health` and
    `/docs`.
 
-The backend and database are explicitly pinned to Render's Free instance types;
-the static frontend is also free. Review Render's current limits before creating
-the resources. In particular, free PostgreSQL expires after 30 days and has no
-backups, and a free backend sleeps after 15 idle minutes. Upgrade both resources
-before using this for a real conference. The database blocks direct public
-connections; use Render's private network through the backend for normal
-operation.
+For the custom domains, add `eigenvalue.space` to the participant static site
+and `api.eigenvalue.space` to the backend in Render. In Porkbun DNS, point the
+root domain to Render, point `www` to the participant site's `onrender.com`
+hostname, and point `api` to the backend's `onrender.com` hostname. Verify both
+domains in Render and wait for their managed TLS certificates before performing
+the live verification.
+
+The backend is pinned to Render's Starter instance type, and PostgreSQL is
+pinned to Basic-256mb. The static frontends remain free. The database blocks
+direct public connections; use Render's private network through the backend for
+normal operation. Run the deployed burst verification and review Render's CPU,
+memory, and database metrics before using the application for a live conference.

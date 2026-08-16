@@ -4,9 +4,11 @@ services:
   - type: web
     name: conference-survey-api
     runtime: python
-    plan: free
+    plan: starter
     region: frankfurt
     rootDir: backend
+    domains:
+      - api.eigenvalue.space
     buildCommand: pip install -e .
     startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -18,10 +20,7 @@ services:
           name: conference-survey-db
           property: connectionString
       - key: FRONTEND_ORIGIN
-        fromService:
-          type: web
-          name: conference-survey-web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://eigenvalue.space
       - key: PRESENTATION_ORIGIN
         fromService:
           type: web
@@ -40,14 +39,13 @@ services:
     name: conference-survey-web
     runtime: static
     rootDir: frontend
+    domains:
+      - eigenvalue.space
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: conference-survey-api
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://api.eigenvalue.space
       - key: NODE_VERSION
         value: 22.22.1
     routes:
@@ -63,10 +61,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: conference-survey-api
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://api.eigenvalue.space
       - key: NODE_VERSION
         value: 22.22.1
     routes:
@@ -76,7 +71,7 @@ services:
 
 databases:
   - name: conference-survey-db
-    plan: free
+    plan: basic-256mb
     region: frankfurt
     databaseName: conference_survey
     user: conference_survey
