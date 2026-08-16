@@ -21,6 +21,10 @@ Then open:
 - Presentation: <http://localhost:5174>
 - API documentation: <http://localhost:8000/docs>
 
+Interactive API documentation and the OpenAPI schema are available in local
+development and tests, but `/docs`, `/redoc`, and `/openapi.json` return 404 in
+production.
+
 The organizer dashboard uses the local-only `RESULTS_EXPORT_TOKEN` in
 `backend/.env`. The launcher starts PostgreSQL when necessary, applies every
 Alembic migration, and runs the participant frontend, presentation, and backend
@@ -326,8 +330,7 @@ To deploy:
    the generated `RESULTS_EXPORT_TOKEN` for organizer use. Do not expose it to
    participants or add it to any `VITE_` variable.
 5. Open the frontend URL and verify both `/` and `/admin`; open the presentation
-   URL and verify the master keyword; check the backend URL at `/health` and
-   `/docs`.
+   URL and verify the master keyword; check the backend URL at `/health`.
 
 For the custom domains, add `eigenvalue.space` to the participant static site
 and `api.eigenvalue.space` to the backend in Render. In Porkbun DNS, point the

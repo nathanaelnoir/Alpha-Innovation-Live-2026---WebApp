@@ -14,6 +14,7 @@ from app.db.session import create_database_engine, create_session_factory
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     app_settings = settings or get_settings()
+    expose_api_docs = app_settings.app_env != "production"
     allowed_origins = [str(app_settings.frontend_origin).rstrip("/")]
     if app_settings.presentation_origin is not None:
         allowed_origins.append(str(app_settings.presentation_origin).rstrip("/"))
@@ -35,6 +36,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         openapi_tags=OPENAPI_TAGS,
         swagger_ui_parameters=SWAGGER_UI_PARAMETERS,
+        openapi_url="/openapi.json" if expose_api_docs else None,
+        docs_url="/docs" if expose_api_docs else None,
+        redoc_url="/redoc" if expose_api_docs else None,
         lifespan=lifespan,
     )
     application.state.settings = app_settings

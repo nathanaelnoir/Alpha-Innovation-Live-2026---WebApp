@@ -96,6 +96,26 @@ async def test_swagger_ui_uses_review_friendly_defaults() -> None:
 
 
 @pytest.mark.asyncio
+async def test_api_documentation_is_hidden_in_production() -> None:
+    app = create_app(
+        Settings(
+            app_env="production",
+            participant_token_secret="p" * 32,
+            results_export_token="r" * 32,
+            _env_file=None,
+        )
+    )
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        responses = [
+            await client.get(path) for path in ("/docs", "/redoc", "/openapi.json")
+        ]
+
+    assert [response.status_code for response in responses] == [404, 404, 404]
+
+
+@pytest.mark.asyncio
 async def test_cors_preflight_allows_admin_delete_requests() -> None:
     frontend_origin = "https://survey.example.com"
     app = create_app(Settings(frontend_origin=frontend_origin, _env_file=None))
