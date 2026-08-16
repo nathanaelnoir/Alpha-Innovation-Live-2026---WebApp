@@ -28,6 +28,9 @@ describe('ParticipantDeviceGate', () => {
     expect(
       screen.getByRole('heading', { name: 'Please use a phone or tablet' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByTitle('Scan to open eigenvalue.space on a mobile device'),
+    ).toBeInTheDocument()
     expect(screen.queryByText('Participant survey')).not.toBeInTheDocument()
   })
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, createParticipant, getActiveSession, submitResponse } from './api'
+import { ArtworkBrand } from './ArtworkBrand'
 import { CoordinatePlane } from './CoordinatePlane'
 import {
   clearParticipantIdentity,
@@ -221,9 +222,7 @@ export default function App() {
         <span>10100100110100101101001001011010100110100111001001001</span>
       </div>
       <header className="site-header">
-        <a className="brand" href="/" aria-label="Alpha Innovation Live 2026 home">
-          <span>ALPHA INNOVATION LIVE 2026</span>
-        </a>
+        <ArtworkBrand />
         <div className="header-data" aria-hidden="true">
           <span>SYSTEM/01</span><span>INPUT/XY</span><span>RANGE/0—1</span>
         </div>
@@ -272,7 +271,7 @@ export default function App() {
               <p className="eyebrow">{text.waitingEyebrow}</p>
               <h1>{text.waitingTitle}</h1>
               <p>{text.waitingBody}</p>
-              <button className="secondary-button" type="button" onClick={() => void loadSurvey()}>
+              <button className="secondary-button" type="button" onClick={() => void loadSurvey(false)}>
                 {text.checkAgain}
               </button>
             </div>

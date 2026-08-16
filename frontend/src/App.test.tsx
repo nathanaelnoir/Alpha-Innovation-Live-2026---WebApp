@@ -229,8 +229,16 @@ describe('App', () => {
       await screen.findByRole('heading', { name: 'Waiting for the next session' }),
     ).toBeInTheDocument()
 
-    mockedGetActiveSession.mockResolvedValueOnce(surveySession)
+    const refresh = deferred<ActiveSurveySession>()
+    mockedGetActiveSession.mockReturnValueOnce(refresh.promise)
     await userEvent.click(screen.getByRole('button', { name: 'Check again' }))
+
+    expect(
+      screen.getByRole('heading', { name: 'Waiting for the next session' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('loading-stream')).not.toBeInTheDocument()
+
+    await act(async () => refresh.resolve(surveySession))
     expect(await screen.findByRole('heading', { name: question.prompt })).toBeInTheDocument()
   })
 
