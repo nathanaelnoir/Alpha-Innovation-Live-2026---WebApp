@@ -549,12 +549,14 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
 
       // The active question's coordinate labels come directly from PostgreSQL.
       ctx.fillStyle = `rgba(255,255,255,${0.88 * fade * introAlpha})`;
-      ctx.font = "500 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      const axisLabelFontSize = clamp(finalPlotSize * 0.04, 18, 26);
+      const axisLabelOffset = axisLabelFontSize + 10;
+      ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       ctx.textAlign = "right";
-      if (dataset?.axisLabels?.x) ctx.fillText(dataset.axisLabels.x.toUpperCase(), right, bottom + 24);
+      if (dataset?.axisLabels?.x) ctx.fillText(dataset.axisLabels.x.toUpperCase(), right, bottom + axisLabelOffset);
       if (dataset?.axisLabels?.y) {
         ctx.save();
-        ctx.translate(left - 24, top);
+        ctx.translate(left - axisLabelOffset, top);
         ctx.rotate(-Math.PI / 2);
         ctx.textAlign = "right";
         ctx.fillText(dataset.axisLabels.y.toUpperCase(), 0, 0);
@@ -1381,7 +1383,7 @@ const CSS = String.raw`
   .stage { height: 100vh; position: relative; display: grid; place-items: center; }
   .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 450ms linear, opacity 240ms linear; }
   .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
-  .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: .3em 0; }
+  .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: .65em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
   .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 220ms linear; }
