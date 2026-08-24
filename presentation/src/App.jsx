@@ -3,17 +3,18 @@ import * as Tone from "tone";
 import * as THREE from "three";
 import { evaluate, getAudioContext, getSuperdoughAudioController, hush, initAudio, initStrudel } from "@strudel/web";
 
-const TARGET_SECONDS = 15;
+const TARGET_SECONDS = 16.5;
 const MIN_POINTS = 1;
 const MAX_POINTS = 150;
 const LOOKAHEAD = 0.16;
-const COORDINATE_REVEAL_MS = 1200;
-const DATA_CLEAR_MS = 1000;
-const BETWEEN_HOLD_MS = 250;
-const NEXT_QUESTION_BLEND_MS = 1200;
+const COORDINATE_REVEAL_MS = 1320;
+const DATA_CLEAR_MS = 1100;
+const BETWEEN_HOLD_MS = 275;
+const NEXT_QUESTION_BLEND_MS = 1320;
 const FINAL_RELEASE_SECONDS = 0.06;
 const AUTO_START_DELAY_MS = 3000;
-const STRUDEL_CPM = 70;
+const AUDIO_TEMPO_SCALE = 0.92;
+const STRUDEL_CPM = 70 * AUDIO_TEMPO_SCALE;
 const STRUDEL_BACKGROUND = `
 setcpm(${STRUDEL_CPM})
 `;
@@ -236,12 +237,13 @@ function buildForwardComposition(run, movementIndex) {
     { transpose: 7, cpm: 71, data: "c#6", figureFast: 2.1, pulseSlow: 8, clusterSlow: 12, voice: "triangle", low: 1250, high: 4700, noiseSlow: 19 },
   ];
   const variation = variations[movementIndex % variations.length];
-  const forwardCycles = run.duration * variation.cpm / 60;
+  const compositionCpm = variation.cpm * AUDIO_TEMPO_SCALE;
+  const forwardCycles = run.duration * compositionCpm / 60;
   const dataNotes = run.events.map((_, index) => index === 0 || index === run.events.length - 1 ? "a5" : variation.data).join(" ");
 
   return `
 // @version 1.0
-setcpm(${variation.cpm})
+setcpm(${compositionCpm})
 const figure = note("<f#4 a4 b4> <d5 c#5 b4>")
   .add(note(${variation.transpose}))
   .fast(${variation.figureFast})
@@ -549,7 +551,7 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
 
       // The active question's coordinate labels come directly from PostgreSQL.
       ctx.fillStyle = `rgba(255,255,255,${0.88 * fade * introAlpha})`;
-      const axisLabelFontSize = clamp(finalPlotSize * 0.04, 18, 26);
+      const axisLabelFontSize = 20;
       const axisLabelOffset = axisLabelFontSize + 10;
       ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       ctx.textAlign = "right";
@@ -1381,24 +1383,24 @@ const CSS = String.raw`
   }
   .counter { margin-left: auto; color: #858585; }
   .stage { height: 100vh; position: relative; display: grid; place-items: center; }
-  .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 450ms linear, opacity 240ms linear; }
+  .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 495ms linear, opacity 264ms linear; }
   .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
   .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: .65em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
   .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
-  .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 220ms linear; }
+  .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
   .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 52px); transform: translateY(-50%); }
-  .state-opening .question-wrap { animation: side-question-in 700ms ease-out both; }
+  .state-opening .question-wrap { animation: side-question-in 770ms ease-out both; }
   @keyframes side-question-in {
     from { opacity: 0; transform: translate(-12px, -50%); }
     to { opacity: 1; transform: translate(0, -50%); }
   }
-  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: clamp(11px, 1.05vw, 15px); line-height: 1.45; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
+  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: clamp(14px, 1.3vw, 19px); line-height: 1.45; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
   .state-question .question-wrap .eyebrow, .state-question-transition .question-wrap .eyebrow, .state-opening .question-wrap .eyebrow, .state-playing .question-wrap .eyebrow, .state-complete .question-wrap .eyebrow, .state-transforming .question-wrap .eyebrow { display: block; font-size: 14px; font-weight: 500; }
   .state-question .plot, .state-opening .plot, .state-playing .plot, .state-complete .plot { opacity: 1; }
   .state-finished .plot { opacity: 1; }
   .state-finished .question-wrap { display: none; }
-  .state-question-transition .question-wrap { z-index: 3; animation: next-question-in 1200ms ease-out both; }
+  .state-question-transition .question-wrap { z-index: 3; animation: next-question-in 1320ms ease-out both; }
   .state-question-transition .plot, .state-transforming .plot, .state-between .plot { opacity: 1; }
   .state-transforming .question-wrap { visibility: hidden; opacity: 0; animation: none; pointer-events: none; }
   .state-between .question-wrap { visibility: hidden; opacity: 0; pointer-events: none; }
