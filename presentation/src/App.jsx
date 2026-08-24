@@ -7,6 +7,8 @@ const TARGET_SECONDS = 16.5;
 const MIN_POINTS = 1;
 const MAX_POINTS = 150;
 const LOOKAHEAD = 0.16;
+const FIRST_RUN_LOOKAHEAD = 0.45;
+const AUDIO_WARMUP_MS = 300;
 const COORDINATE_REVEAL_MS = 1320;
 const DATA_CLEAR_MS = 1100;
 const BETWEEN_HOLD_MS = 275;
@@ -20,8 +22,29 @@ setcpm(${STRUDEL_CPM})
 `;
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/+$/, "");
 
+let audioWarmupPromise = null;
+
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 const lerp = (a, b, t) => a + (b - a) * t;
+
+function warmAudioEngine() {
+  if (audioWarmupPromise) return audioWarmupPromise;
+  audioWarmupPromise = (async () => {
+    const strudelContext = getAudioContext();
+    await Promise.all([Tone.start(), strudelContext.resume(), initAudio(), initStrudel()]);
+    const masterGain = getSuperdoughAudioController().output.destinationGain.gain;
+    const now = strudelContext.currentTime;
+    masterGain.cancelScheduledValues(now);
+    masterGain.setValueAtTime(0, now);
+    await evaluate(`${STRUDEL_BACKGROUND}\n$: note("a4").s("sine").fast(8).gain(0)`);
+    await new Promise((resolve) => window.setTimeout(resolve, AUDIO_WARMUP_MS));
+    hush();
+  })().catch((error) => {
+    audioWarmupPromise = null;
+    throw error;
+  });
+  return audioWarmupPromise;
+}
 
 function mulberry32(seed) {
   return () => {
@@ -567,10 +590,10 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
 
       // Minimal key, placed in the lower-left outer gutter.
       const legendX = clamp(left * 0.16, 22, 54);
-      const legendGap = 32;
+      const legendGap = 42;
       const legendY = bottom - clamp(plotSize * 0.095, 60, 84);
       const legendMark = 12;
-      ctx.font = "500 14px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       ctx.textAlign = "left";
       ctx.fillStyle = `rgba(255,255,255,${0.96 * fade * introAlpha})`;
       ctx.fillRect(legendX - legendMark / 2, legendY - legendMark / 2, legendMark, legendMark);
@@ -947,6 +970,7 @@ function SessionApp({ initialSource, sessionTitle }) {
   const eventIdsRef = useRef([]);
   const transitionEchoRef = useRef(null);
   const strudelReadyRef = useRef(false);
+  const playbackStartedRef = useRef(false);
   const stateRef = useRef(state);
   const lastKeyRef = useRef(0);
   const prefetchedRef = useRef(new Map());
@@ -983,6 +1007,7 @@ function SessionApp({ initialSource, sessionTitle }) {
   const beginRun = useCallback(async () => {
     if (!dataset || stateRef.current !== "question") return;
     const run = prepareRun(dataset, targetSeconds);
+    const startDelay = playbackStartedRef.current ? LOOKAHEAD : FIRST_RUN_LOOKAHEAD;
     let strudelContext;
     let masterGain;
     try {
@@ -993,8 +1018,7 @@ function SessionApp({ initialSource, sessionTitle }) {
       strudelContext = getAudioContext();
       const strudelResume = strudelContext.resume();
       if (!strudelReadyRef.current) {
-        const strudelInit = initStrudel();
-        await Promise.all([toneResume, strudelResume, initAudio(), strudelInit]);
+        await Promise.all([toneResume, strudelResume, warmAudioEngine()]);
         strudelReadyRef.current = true;
       } else {
         await Promise.all([toneResume, strudelResume]);
@@ -1039,7 +1063,7 @@ function SessionApp({ initialSource, sessionTitle }) {
       const audioNow = strudelContext.currentTime;
       masterGain.cancelScheduledValues(audioNow);
       masterGain.setValueAtTime(0, audioNow);
-      masterGain.setValueAtTime(1, audioNow + LOOKAHEAD);
+      masterGain.setValueAtTime(1, audioNow + startDelay);
       setMessage("");
     } catch (error) {
       hush();
@@ -1052,7 +1076,7 @@ function SessionApp({ initialSource, sessionTitle }) {
 
     const transport = Tone.getTransport?.() ?? Tone.Transport;
     const draw = Tone.getDraw?.() ?? Tone.Draw;
-    const startAt = LOOKAHEAD;
+    const startAt = startDelay;
     transport.bpm.value = 84;
 
     const bridgeStartId = transport.schedule((time) => {
@@ -1109,6 +1133,7 @@ function SessionApp({ initialSource, sessionTitle }) {
     }, startAt + lastPointTime);
     eventIdsRef.current.push(completeId);
     transport.start();
+    playbackStartedRef.current = true;
 
     const next = datasetIndex + 1;
     if (next < source.length && !prefetchedRef.current.has(next)) {
@@ -1284,8 +1309,10 @@ export default function App() {
     if (!token.trim() || loading) return;
     setLoading(true);
     setError("");
+    const audioWarmup = warmAudioEngine().catch(() => undefined);
     try {
       const payload = await fetchPresentations(token.trim());
+      await audioWarmup;
       const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
       const usable = datasets.filter((dataset) => dataset.points.length >= MIN_POINTS);
       if (!usable.length) throw new Error(`No session has a question with at least ${MIN_POINTS} responses.`);
@@ -1385,7 +1412,7 @@ const CSS = String.raw`
   .stage { height: 100vh; position: relative; display: grid; place-items: center; }
   .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 495ms linear, opacity 264ms linear; }
   .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
-  .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: .65em 0; }
+  .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: 1em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
   .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
@@ -1395,7 +1422,7 @@ const CSS = String.raw`
     from { opacity: 0; transform: translate(-12px, -50%); }
     to { opacity: 1; transform: translate(0, -50%); }
   }
-  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: clamp(14px, 1.3vw, 19px); line-height: 1.45; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
+  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: 20px; line-height: 1.45; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
   .state-question .question-wrap .eyebrow, .state-question-transition .question-wrap .eyebrow, .state-opening .question-wrap .eyebrow, .state-playing .question-wrap .eyebrow, .state-complete .question-wrap .eyebrow, .state-transforming .question-wrap .eyebrow { display: block; font-size: 14px; font-weight: 500; }
   .state-question .plot, .state-opening .plot, .state-playing .plot, .state-complete .plot { opacity: 1; }
   .state-finished .plot { opacity: 1; }
@@ -1434,7 +1461,6 @@ const CSS = String.raw`
     footer { left: 14px; right: 14px; }
     .question-wrap, .closing { width: 88vw; }
     .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 14px; width: 42vw; transform: translateY(-50%); }
-    .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { font-size: 9px; }
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
 `;
