@@ -21,7 +21,7 @@ void main() {
 // used here with the user's authorization and a blue-accented output palette.
 const fragmentShaderSource = `
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 
 uniform vec2 u_resolution;
