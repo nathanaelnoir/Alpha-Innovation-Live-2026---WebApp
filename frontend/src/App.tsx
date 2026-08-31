@@ -38,6 +38,26 @@ const ACTIVE_POLL_INTERVAL_MS = 5_000
 const WAITING_POLL_INTERVAL_MS = 15_000
 const POLL_JITTER_MS = 2_000
 const MANUAL_EMPTY_FEEDBACK_MS = 3_000
+const MINIMUM_LOADING_FEEDBACK_MS = 600
+
+async function waitForMinimumLoadingFeedback(
+  startedAt: number,
+  signal: AbortSignal,
+) {
+  const remaining = MINIMUM_LOADING_FEEDBACK_MS - (performance.now() - startedAt)
+  if (remaining <= 0 || signal.aborted) return
+  await new Promise<void>((resolve) => {
+    const handleAbort = () => {
+      window.clearTimeout(timer)
+      resolve()
+    }
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener('abort', handleAbort)
+      resolve()
+    }, remaining)
+    signal.addEventListener('abort', handleAbort, { once: true })
+  })
+}
 
 function readableAxisLabel(label: string | null, fallback: string): string {
   return label?.replace(/\s*\([^)]*\)/g, '').trim() || fallback
@@ -64,6 +84,7 @@ export default function App() {
 
   const loadSurvey = useCallback(async (options: LoadSurveyOptions = {}) => {
     const { showLoading = true, emptyFeedbackMs = 0 } = options
+    const loadingStartedAt = performance.now()
     loadControllerRef.current?.abort()
     window.clearTimeout(emptyFeedbackTimerRef.current)
     const controller = new AbortController()
@@ -89,6 +110,10 @@ export default function App() {
       const nextQuestion = activeSession.questions.find(
         (candidate) => !completed.has(candidate.id),
       ) ?? null
+      if (showLoading) {
+        await waitForMinimumLoadingFeedback(loadingStartedAt, controller.signal)
+        if (controller.signal.aborted) return
+      }
       if (
         sessionRef.current?.id !== activeSession.id ||
         questionRef.current?.id !== nextQuestion?.id

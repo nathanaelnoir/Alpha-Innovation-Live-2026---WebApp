@@ -97,6 +97,27 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Loading the question…' })).not.toBeInTheDocument()
   })
 
+  it('keeps loading feedback visible for a perceptible minimum duration', async () => {
+    vi.useFakeTimers()
+    try {
+      mockedCreateParticipant.mockResolvedValue(participant)
+      mockedGetActiveSession.mockResolvedValue(surveySession)
+
+      render(<App />)
+      await act(async () => undefined)
+
+      expect(screen.getByTestId('loading-stream')).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: question.prompt })).not.toBeInTheDocument()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+      expect(screen.getByRole('heading', { name: question.prompt })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('creates and persists a pseudonymous participant while loading the session', async () => {
     await renderReadyApp()
     expect(screen.queryByTestId('question-signal-line')).not.toBeInTheDocument()
