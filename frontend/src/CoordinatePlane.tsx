@@ -14,6 +14,7 @@ interface CoordinatePlaneProps {
 
 export interface CoordinatePlaneText {
   ariaLabel: string
+  choiceHint: string
   selectedPoint: string
   noPoint: string
   tapHint: string
@@ -23,6 +24,7 @@ export interface CoordinatePlaneText {
 
 const defaultText: CoordinatePlaneText = {
   ariaLabel: 'Choose your response on the coordinate plane',
+  choiceHint: 'Move the sliders or choose a position directly in the coordinate system.',
   selectedPoint: 'Selected point',
   noPoint: 'No point selected',
   tapHint: '[ TAP OR DRAG TO RESPOND ]',
@@ -99,6 +101,9 @@ export function CoordinatePlane({
 
   return (
     <div className="coordinate-layout">
+      {hasQuadrantMeanings && (
+        <p className="coordinate-choice-hint">{text.choiceHint}</p>
+      )}
       {/* <div className="axis-label axis-label--y">
         <span>{yAxisLabel ?? 'Vertical scale'}</span>
         <span className="axis-arrow" aria-hidden="true">↑</span>

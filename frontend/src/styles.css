@@ -214,6 +214,16 @@ h1 {
   margin: 0 auto;
 }
 
+.coordinate-choice-hint {
+  margin: 0 0 10px;
+  color: #777;
+  font-size: .52rem;
+  line-height: 1.4;
+  letter-spacing: .07em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .coordinate-surface {
   position: relative;
   grid-column: 1;
@@ -426,6 +436,7 @@ h1 {
   .balance-meter__intro h2 { font-size: clamp(.86rem, 4vw, 1.05rem); }
   .balance-meter__intro p { margin-top: 5px; font-size: clamp(.58rem, 2.6vw, .68rem); line-height: 1.4; }
   .coordinate-layout {
+    position: relative;
     display: flex;
     flex: 1 1 0;
     align-items: center;
@@ -433,6 +444,14 @@ h1 {
     width: 100%;
     min-height: 0;
     margin: 0;
+  }
+  .coordinate-choice-hint {
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    left: 4px;
+    margin: 0;
+    font-size: clamp(.44rem, 2.1vw, .52rem);
   }
   .coordinate-surface {
     width: auto;

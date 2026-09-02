@@ -41,6 +41,7 @@ export const copy = {
     readyFooter: 'SYSTEM READY',
     coordinatePlane: {
       ariaLabel: 'Choose your response on the coordinate plane',
+      choiceHint: 'Move the sliders or choose a position directly in the coordinate system.',
       selectedPoint: 'Selected point',
       noPoint: 'No point selected',
       tapHint: '[ TAP OR DRAG TO RESPOND ]',
@@ -84,6 +85,7 @@ export const copy = {
     readyFooter: 'SYSTEM BEREIT',
     coordinatePlane: {
       ariaLabel: 'Antwort im Koordinatenfeld auswählen',
+      choiceHint: 'Regler verschieben oder Position direkt im Koordinatensystem wählen.',
       selectedPoint: 'Ausgewählter Punkt',
       noPoint: 'Kein Punkt ausgewählt',
       tapHint: '[ TIPPEN ODER ZIEHEN ]',
@@ -127,6 +129,7 @@ export const copy = {
     readyFooter: 'SISTEMA PRONTO',
     coordinatePlane: {
       ariaLabel: 'Seleziona la risposta sul piano cartesiano',
+      choiceHint: 'Sposti i cursori o scelga una posizione direttamente nel sistema di coordinate.',
       selectedPoint: 'Punto selezionato',
       noPoint: 'Nessun punto selezionato',
       tapHint: '[ TOCCA O TRASCINA ]',
