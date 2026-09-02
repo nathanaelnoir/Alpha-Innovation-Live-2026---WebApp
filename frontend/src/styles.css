@@ -195,7 +195,7 @@ h1 {
 .balance-meter__track::after { right: 0; }
 .balance-meter__center { position: absolute; top: -3px; left: 50%; width: 1px; height: 9px; background: #777; transform: translateX(-50%); }
 .balance-meter__marker { position: absolute; top: 50%; width: 11px; height: 11px; border: 1px solid var(--white); border-radius: 50%; background: var(--blue); box-shadow: 0 0 8px rgba(54,91,216,.75); transform: translate(-50%, -50%); }
-.balance-meter__balanced { display: block; margin-top: 4px; color: #696969; font-size: .43rem; line-height: 1; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.balance-meter__balanced { display: block; margin-top: 6px; color: #696969; font-size: .43rem; line-height: 1; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
 .position-readout--slider-only { flex: 1; width: min(100%, 680px); margin: 0 auto; padding-inline: 8px; border: 0; background: none; }
 .position-readout--slider-only .balance-readout { gap: clamp(24px, 5dvh, 42px); }
 .position-readout--slider-only .balance-meter__labels { font-size: clamp(.68rem, 2vw, .82rem); }
@@ -401,11 +401,11 @@ h1 {
   .survey-card { min-height: calc(100dvh - 58px); }
   .survey-content {
     --question-readout-gap: 12px;
-    --coordinate-gap: 16px;
+    --coordinate-gap: 0;
     display: flex;
-    height: calc(100dvh - 60px);
+    height: calc(100dvh - 46px - max(14px, env(safe-area-inset-bottom)));
     flex-direction: column;
-    padding: 14px 0 112px;
+    padding: 14px 0 0;
   }
   .question-heading { padding-inline: 4px; }
   .question-heading h1 { font-size: clamp(1rem, 4.4vw, 1.25rem); line-height: 1.1; }
@@ -426,12 +426,18 @@ h1 {
   .balance-meter__intro h2 { font-size: clamp(.86rem, 4vw, 1.05rem); }
   .balance-meter__intro p { margin-top: 5px; font-size: clamp(.58rem, 2.6vw, .68rem); line-height: 1.4; }
   .coordinate-layout {
-    grid-template-columns: 1fr;
-    width: min(90vw, 47dvh, 350px);
-    margin-block: auto;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
   }
   .coordinate-surface {
-    grid-column: 1;
+    width: auto;
+    height: min(90vw, 47dvh, 350px, 100%);
+    max-width: 100%;
     aspect-ratio: 1 / 1;
     background-size: 2.5% 2.5%, auto;
   }
@@ -439,17 +445,14 @@ h1 {
   .quadrant-label strong { font-size: clamp(.5rem, 2.6vw, .66rem); }
   .quadrant-label span { font-size: clamp(.44rem, 2.3vw, .58rem); }
   .submission-area {
-    position: fixed;
+    position: relative;
     z-index: 20;
-    right: max(14px, env(safe-area-inset-right));
-    bottom: 0;
-    left: max(14px, env(safe-area-inset-left));
-    width: auto;
+    flex: none;
+    width: 100%;
     margin: 0;
-    padding: 9px 0 max(10px, env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, rgba(5,5,5,.94), var(--black) 24%);
+    padding: 0;
   }
-  .status-message { margin-bottom: 6px; }
+  .status-message { position: absolute; right: 0; bottom: 100%; left: 0; margin-bottom: 6px; }
   .submit-button { min-height: 48px; }
   .fine-print { margin-top: 6px; }
   .data-footer { display: none; }
