@@ -389,7 +389,14 @@ h1 {
   .privacy-note { font-size: 0; }
   .privacy-note i { width: 6px; height: 6px; }
   .survey-card { min-height: calc(100dvh - 58px); }
-  .survey-content { --question-readout-gap: 12px; --coordinate-gap: 16px; padding: 14px 0 112px; }
+  .survey-content {
+    --question-readout-gap: 12px;
+    --coordinate-gap: 16px;
+    display: flex;
+    height: calc(100dvh - 60px);
+    flex-direction: column;
+    padding: 14px 0 112px;
+  }
   .question-heading { padding-inline: 4px; }
   .question-heading h1 { font-size: clamp(1rem, 4.4vw, 1.25rem); line-height: 1.1; }
   .eyebrow { font-size: .5rem; line-height: 1.7; }
@@ -402,7 +409,8 @@ h1 {
   .balance-meter__labels { gap: 12px; font-size: clamp(.47rem, 2.2vw, .56rem); }
   .coordinate-layout {
     grid-template-columns: 1fr;
-    width: min(86vw, 44dvh, 340px);
+    width: min(90vw, 47dvh, 350px);
+    margin-block: auto;
   }
   .coordinate-surface {
     grid-column: 1;
