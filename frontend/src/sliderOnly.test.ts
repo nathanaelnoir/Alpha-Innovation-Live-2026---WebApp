@@ -30,6 +30,14 @@ describe('slider-only prompt encoding', () => {
     })
   })
 
+  it('supports a long survey question within the backend prompt limit', () => {
+    const question = 'Q'.repeat(600)
+    const encoded = encodeSliderOnlyPrompt(question, 'Title', 'Subtitle')
+
+    expect(parseSliderOnlyPrompt(encoded)?.question).toBe(question)
+    expect(encoded.length).toBeLessThanOrEqual(1000)
+  })
+
   it('leaves normal and malformed prompts unchanged', () => {
     expect(parseSliderOnlyPrompt('A normal question')).toBeNull()
     expect(displayPrompt('[[slider-only:v1]]broken')).toBe(

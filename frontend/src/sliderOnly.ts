@@ -1,8 +1,9 @@
 const SLIDER_ONLY_V1_PREFIX = '[[slider-only:v1]]'
 const SLIDER_ONLY_V2_PREFIX = '[[slider-only:v2]]'
-export const SLIDER_ONLY_QUESTION_MAX_LENGTH = 150
+export const SLIDER_ONLY_QUESTION_MAX_LENGTH = 600
 export const SLIDER_ONLY_TITLE_MAX_LENGTH = 100
 export const SLIDER_ONLY_SUBTITLE_MAX_LENGTH = 220
+const SLIDER_ONLY_PROMPT_MAX_LENGTH = 1000
 
 export interface SliderOnlyContent {
   question: string
@@ -28,11 +29,15 @@ export function encodeSliderOnlyPrompt(
   ) {
     throw new Error('The slider-only question, title, or subtitle is too long.')
   }
-  return `${SLIDER_ONLY_V2_PREFIX}${JSON.stringify([
+  const encoded = `${SLIDER_ONLY_V2_PREFIX}${JSON.stringify([
     cleanedQuestion,
     cleanedTitle,
     cleanedSubtitle,
   ])}`
+  if (encoded.length > SLIDER_ONLY_PROMPT_MAX_LENGTH) {
+    throw new Error('The combined slider-only text is too long.')
+  }
+  return encoded
 }
 
 export function parseSliderOnlyPrompt(prompt: string): SliderOnlyContent | null {
