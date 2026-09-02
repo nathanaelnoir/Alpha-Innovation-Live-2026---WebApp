@@ -16,7 +16,7 @@ import {
   type Language,
 } from './i18n'
 import { loadCompletedQuestions, markQuestionCompleted } from './sessionProgress'
-import { parseAxisEndpoints, quadrantMeaning } from './quadrants'
+import { parseAxisEndpoints } from './quadrants'
 import { ResponseStream } from './ResponseStream'
 import { WaitingParticles } from './WaitingParticles'
 import type {
@@ -254,16 +254,12 @@ export default function App() {
 
   const text = copy[language]
   const localizedQuestion = question ? localizeQuestion(question, language) : null
-  const selectedQuadrant = coordinate && localizedQuestion
-    ? quadrantMeaning(
-        coordinate,
-        localizedQuestion.xAxisLabel,
-        localizedQuestion.yAxisLabel,
-      )
+  const xEndpoints = localizedQuestion
+    ? parseAxisEndpoints(localizedQuestion.xAxisLabel)
     : null
-  const hasQuadrantLabels = localizedQuestion
-    && parseAxisEndpoints(localizedQuestion.xAxisLabel)
-    && parseAxisEndpoints(localizedQuestion.yAxisLabel)
+  const yEndpoints = localizedQuestion
+    ? parseAxisEndpoints(localizedQuestion.yAxisLabel)
+    : null
   const localizedMessage = message ? text[message] : ''
 
   const selectLanguage = (nextLanguage: Language) => {
@@ -395,25 +391,43 @@ export default function App() {
             </div>
 
             <div
-              className={`position-readout${coordinate ? ' position-readout--active' : ''}`}
+              className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${coordinate ? ' position-readout--active' : ''}`}
               aria-live="polite"
               aria-label={text.currentPosition}
             >
               <span className="position-readout__label">{text.livePosition}</span>
-              <output className="position-readout__value">
-                {selectedQuadrant && coordinate ? (
-                  <>
-                    <span className="position-readout__meaning">
-                      {selectedQuadrant.horizontal} × {selectedQuadrant.vertical}
-                    </span>
-                    <span className="position-readout__separator" aria-hidden="true">·</span>
-                    <span className="position-readout__coordinates">
-                      X {Math.round(coordinate.x * 100)}% · Y {Math.round(coordinate.y * 100)}%
-                    </span>
-                  </>
-                ) : hasQuadrantLabels ? (
-                  <span className="position-readout__axis-item">---</span>
-                ) : (
+              {xEndpoints && yEndpoints ? (
+                <div className="balance-readout">
+                  <p>{text.balanceInstruction}</p>
+                  {([
+                    ['horizontal', xEndpoints, coordinate?.x],
+                    ['vertical', yEndpoints, coordinate?.y],
+                  ] as const).map(([axis, endpoints, value]) => (
+                    <div className="balance-meter" data-testid={`balance-meter-${axis}`} key={axis}>
+                      <div className="balance-meter__labels">
+                        <span>{endpoints.negative}</span>
+                        <span>{endpoints.positive}</span>
+                      </div>
+                      <div className="balance-meter__track" aria-hidden="true">
+                        <span className="balance-meter__center" />
+                        {value !== undefined && (
+                          <span
+                            className="balance-meter__marker"
+                            style={{ left: `${value * 100}%` }}
+                          />
+                        )}
+                      </div>
+                      <span className="balance-meter__balanced">{text.balanced}</span>
+                    </div>
+                  ))}
+                  <span className="visually-hidden">
+                    {coordinate
+                      ? `${xEndpoints.negative} — ${xEndpoints.positive}: ${Math.round(coordinate.x * 100)}%. ${yEndpoints.negative} — ${yEndpoints.positive}: ${Math.round(coordinate.y * 100)}%.`
+                      : text.coordinatePlane.noPoint}
+                  </span>
+                </div>
+              ) : (
+                <output className="position-readout__value">
                   <>
                     <span className="position-readout__axis-item">
                       {readableAxisLabel(localizedQuestion?.xAxisLabel ?? null, text.horizontal)}
@@ -431,8 +445,8 @@ export default function App() {
                       {coordinate ? `${Math.round(coordinate.y * 100)}%` : '---'}
                     </span>
                   </>
-                )}
-              </output>
+                </output>
+              )}
             </div>
 
             <CoordinatePlane

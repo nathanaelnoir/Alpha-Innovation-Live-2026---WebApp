@@ -78,8 +78,8 @@ Available endpoints:
 The results download uses semicolons as its CSV delimiter so it opens into
 separate columns in Excel installations that use European regional settings.
 It exports readable session titles and question text instead of their internal
-IDs. Normalized coordinates are accompanied by shortened axis labels and the
-same rounded percentage values shown in the participant frontend.
+IDs. Normalized coordinates are accompanied by shortened axis labels and
+rounded percentage values for analysis.
 
 Participant tokens contain only a versioned, HMAC-signed UUID. They are not
 logged or intended to represent a person's real identity.

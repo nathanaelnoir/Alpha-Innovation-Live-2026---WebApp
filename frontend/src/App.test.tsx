@@ -302,6 +302,33 @@ describe('App', () => {
     }
   })
 
+  it('shows semantic balance meters instead of technical coordinates', async () => {
+    const quadrantQuestion = {
+      ...question,
+      x_axis_label: 'Internal processes ↔ Products and services',
+      y_axis_label: 'Human-driven decisions ↔ AI-based decisions',
+    }
+    const surface = await renderReadyApp({
+      ...surveySession,
+      questions: [quadrantQuestion],
+    })
+
+    const horizontal = screen.getByTestId('balance-meter-horizontal')
+    const vertical = screen.getByTestId('balance-meter-vertical')
+    expect(horizontal).toHaveTextContent('Internal processes')
+    expect(horizontal).toHaveTextContent('Products and services')
+    expect(vertical).toHaveTextContent('Human-driven decisions')
+    expect(vertical).toHaveTextContent('AI-based decisions')
+    expect(screen.getByText('Move toward a label when it applies more strongly.')).toBeInTheDocument()
+    expect(horizontal.querySelector('.balance-meter__marker')).not.toBeInTheDocument()
+
+    fireEvent.pointerDown(surface, { pointerId: 1, clientX: 50, clientY: 50 })
+
+    expect(horizontal.querySelector('.balance-meter__marker')).toHaveStyle({ left: '25%' })
+    expect(vertical.querySelector('.balance-meter__marker')).toHaveStyle({ left: '75%' })
+    expect(screen.queryByText('X 25% · Y 75%')).not.toBeInTheDocument()
+  })
+
   it('switches question, labels, interface text, and language preference', async () => {
     await renderReadyApp()
 
