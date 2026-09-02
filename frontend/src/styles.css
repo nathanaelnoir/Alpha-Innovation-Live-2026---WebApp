@@ -400,7 +400,10 @@ h1 {
   .position-readout--balance { min-height: 0; padding: 9px 8px 7px; }
   .balance-readout { gap: 8px; }
   .balance-meter__labels { gap: 12px; font-size: clamp(.47rem, 2.2vw, .56rem); }
-  .coordinate-layout { grid-template-columns: 1fr; }
+  .coordinate-layout {
+    grid-template-columns: 1fr;
+    width: min(86vw, 44dvh, 340px);
+  }
   .coordinate-surface {
     grid-column: 1;
     aspect-ratio: 1 / 1;
