@@ -457,10 +457,16 @@ export default function App() {
                 <span>Q/{question.position}</span>
                 <span>{String(surveySession.questions.length).padStart(4, '0')}</span>
               </div>
-              <h1>{sliderContent?.title ?? localizedQuestion?.prompt}</h1>
-              {sliderContent && <p className="slider-only-subtitle">{sliderContent.subtitle}</p>}
+              <h1>{sliderContent?.question ?? localizedQuestion?.prompt}</h1>
               {/* <p className="instruction">TAP OR DRAG ON THE FIELD · ADJUST BEFORE TRANSMISSION</p> */}
             </div>
+
+            {sliderContent && (
+              <div className="slider-only-intro">
+                {sliderContent.title && <h2>{sliderContent.title}</h2>}
+                <p>{sliderContent.subtitle}</p>
+              </div>
+            )}
 
             <div
               className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${isSliderOnly ? ' position-readout--slider-only' : ''}${coordinate ? ' position-readout--active' : ''}`}

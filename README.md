@@ -102,13 +102,14 @@ existing label fields with ` ↔ `, so this behavior requires no database schema
 change. Questions with older single-value axis labels retain the legacy scale
 display.
 
-Questions may instead use the admin form's slider-only layout. This presents a
-localized title, a longer subtitle, and two enlarged interactive sliders without
-the coordinate plane. Its title, subtitle, and layout marker are encoded in the
-existing localized prompt fields; the four slider endpoints continue to use the
-existing axis-label fields. Submitted and exported responses retain the same
-normalized `x` and `y` values, and CSV exports show the visible title rather than
-the internal prompt encoding.
+Questions may instead use the admin form's slider-only layout. This presents the
+localized survey question followed by a slider-section title, a longer subtitle,
+and two enlarged interactive sliders without the coordinate plane. The three
+texts and layout marker are encoded in the existing localized prompt fields;
+the four slider endpoints continue to use the existing axis-label fields.
+Submitted and exported responses retain the same normalized `x` and `y` values,
+and CSV exports show the visible question rather than the internal prompt
+encoding.
 
 The graph is rendered responsively and can be a different pixel size on each
 device. Pointer coordinates are calculated against the graph's current bounding

@@ -176,7 +176,11 @@ describe('AdminDashboard', () => {
       id: 'question-slider',
       session_id: closedSession.id,
       position: 1,
-      prompt: encodeSliderOnlyPrompt('Decision making', 'Choose where responsibility belongs.'),
+      prompt: encodeSliderOnlyPrompt(
+        'Who should make these decisions?',
+        'Decision making',
+        'Choose where responsibility belongs.',
+      ),
       x_axis_label: 'Internal processes ↔ Products and services',
       y_axis_label: 'Human-driven ↔ AI-based',
       prompt_de: null,
@@ -194,9 +198,13 @@ describe('AdminDashboard', () => {
       screen.getByLabelText('Slider-only layout (hide the coordinate plane)'),
     )
 
-    await userEvent.type(screen.getByLabelText('Title'), 'Decision making')
     await userEvent.type(
-      screen.getByLabelText('Subtitle'),
+      screen.getByLabelText('Question'),
+      'Who should make these decisions?',
+    )
+    await userEvent.type(screen.getByLabelText('Slider title'), 'Decision making')
+    await userEvent.type(
+      screen.getByLabelText('Slider subtitle'),
       'Choose where responsibility belongs.',
     )
     await userEvent.type(screen.getByLabelText('First slider — left'), 'Internal processes')
@@ -209,6 +217,7 @@ describe('AdminDashboard', () => {
       expect(createAdminQuestion).toHaveBeenCalledWith('organizer-secret', {
         session_id: closedSession.id,
         prompt: encodeSliderOnlyPrompt(
+          'Who should make these decisions?',
           'Decision making',
           'Choose where responsibility belongs.',
         ),

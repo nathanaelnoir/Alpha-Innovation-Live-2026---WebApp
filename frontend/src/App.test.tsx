@@ -352,6 +352,7 @@ describe('App', () => {
     const sliderQuestion = {
       ...question,
       prompt: encodeSliderOnlyPrompt(
+        'Who should make these decisions?',
         'Decision making',
         'Choose where responsibility should sit for this situation.',
       ),
@@ -372,8 +373,9 @@ describe('App', () => {
     render(<App />)
 
     expect(
-      await screen.findByRole('heading', { name: 'Decision making' }),
+      await screen.findByRole('heading', { name: 'Who should make these decisions?' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Decision making' })).toBeInTheDocument()
     expect(
       screen.getByText('Choose where responsibility should sit for this situation.'),
     ).toBeInTheDocument()

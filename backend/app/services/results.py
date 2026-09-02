@@ -14,7 +14,7 @@ from app.repositories.results import ResultRow, list_results
 logger = logging.getLogger(__name__)
 
 CSV_DELIMITER = ";"
-SLIDER_ONLY_PROMPT_PREFIX = "[[slider-only:v1]]"
+SLIDER_ONLY_PROMPT_PREFIXES = ("[[slider-only:v2]]", "[[slider-only:v1]]")
 CSV_COLUMNS = (
     "response_id",
     "participant_id",
@@ -73,20 +73,23 @@ def readable_axis_label(label: str | None, fallback: str) -> str:
 
 
 def readable_question(prompt: str) -> str:
-    """Return the visible title for an encoded slider-only question."""
-    if not prompt.startswith(SLIDER_ONLY_PROMPT_PREFIX):
+    """Return the visible question for an encoded slider-only prompt."""
+    prefix = next(
+        (value for value in SLIDER_ONLY_PROMPT_PREFIXES if prompt.startswith(value)),
+        None,
+    )
+    if prefix is None:
         return prompt
     try:
-        value = json.loads(prompt.removeprefix(SLIDER_ONLY_PROMPT_PREFIX))
+        value = json.loads(prompt.removeprefix(prefix))
     except json.JSONDecodeError:
         return prompt
     if (
         isinstance(value, list)
-        and len(value) == 2
+        and len(value) in (2, 3)
         and isinstance(value[0], str)
         and value[0].strip()
-        and isinstance(value[1], str)
-        and value[1].strip()
+        and all(isinstance(item, str) and item.strip() for item in value[1:])
     ):
         return value[0]
     return prompt

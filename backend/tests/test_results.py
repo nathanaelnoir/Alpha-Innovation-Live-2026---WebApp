@@ -93,7 +93,10 @@ def test_display_columns_match_frontend_label_and_percentage_logic() -> None:
 
 
 def test_slider_only_question_export_uses_the_visible_title() -> None:
-    encoded = '[[slider-only:v1]]["Decision making","Choose a position."]'
+    encoded = (
+        '[[slider-only:v2]]["Who should make these decisions?",'
+        '"Decision making","Choose a position."]'
+    )
     row = make_row()
     row = ResultRow(
         response_id=row.response_id,
@@ -111,8 +114,12 @@ def test_slider_only_question_export_uses_the_visible_title() -> None:
         csv.reader(io.StringIO(build_results_csv([row])), delimiter=CSV_DELIMITER)
     )
 
-    assert readable_question(encoded) == "Decision making"
-    assert exported_rows[1][3] == "Decision making"
+    assert readable_question(encoded) == "Who should make these decisions?"
+    assert exported_rows[1][3] == "Who should make these decisions?"
+    assert (
+        readable_question('[[slider-only:v1]]["Decision making","Choose a position."]')
+        == "Decision making"
+    )
     assert readable_question("A normal question") == "A normal question"
     assert readable_question("[[slider-only:v1]]broken") == ("[[slider-only:v1]]broken")
 

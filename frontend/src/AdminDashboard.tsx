@@ -15,6 +15,7 @@ import { encodeAxisEndpoints } from './quadrants'
 import {
   displayPrompt,
   encodeSliderOnlyPrompt,
+  SLIDER_ONLY_QUESTION_MAX_LENGTH,
   SLIDER_ONLY_SUBTITLE_MAX_LENGTH,
   SLIDER_ONLY_TITLE_MAX_LENGTH,
 } from './sliderOnly'
@@ -106,12 +107,15 @@ export function AdminDashboard() {
   const [questionSessionId, setQuestionSessionId] = useState('')
   const [sliderOnly, setSliderOnly] = useState(false)
   const [prompt, setPrompt] = useState('')
+  const [sliderTitle, setSliderTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
   const [endpoints, setEndpoints] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptDe, setPromptDe] = useState('')
+  const [sliderTitleDe, setSliderTitleDe] = useState('')
   const [subtitleDe, setSubtitleDe] = useState('')
   const [endpointsDe, setEndpointsDe] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptIt, setPromptIt] = useState('')
+  const [sliderTitleIt, setSliderTitleIt] = useState('')
   const [subtitleIt, setSubtitleIt] = useState('')
   const [endpointsIt, setEndpointsIt] = useState<EndpointFields>(EMPTY_ENDPOINTS)
 
@@ -166,27 +170,32 @@ export function AdminDashboard() {
     void runAction(async () => {
       await createAdminQuestion(token, {
         session_id: questionSessionId,
-        prompt: sliderOnly ? encodeSliderOnlyPrompt(prompt, subtitle) : prompt,
+        prompt: sliderOnly
+          ? encodeSliderOnlyPrompt(prompt, sliderTitle, subtitle)
+          : prompt,
         x_axis_label: encodeAxisEndpoints(endpoints.xNegative, endpoints.xPositive),
         y_axis_label: encodeAxisEndpoints(endpoints.yNegative, endpoints.yPositive),
-        prompt_de: sliderOnly && (promptDe.trim() || subtitleDe.trim())
-          ? encodeSliderOnlyPrompt(promptDe, subtitleDe)
+        prompt_de: sliderOnly && (promptDe.trim() || sliderTitleDe.trim() || subtitleDe.trim())
+          ? encodeSliderOnlyPrompt(promptDe, sliderTitleDe, subtitleDe)
           : promptDe.trim() || null,
         x_axis_label_de: encodeAxisEndpoints(endpointsDe.xNegative, endpointsDe.xPositive),
         y_axis_label_de: encodeAxisEndpoints(endpointsDe.yNegative, endpointsDe.yPositive),
-        prompt_it: sliderOnly && (promptIt.trim() || subtitleIt.trim())
-          ? encodeSliderOnlyPrompt(promptIt, subtitleIt)
+        prompt_it: sliderOnly && (promptIt.trim() || sliderTitleIt.trim() || subtitleIt.trim())
+          ? encodeSliderOnlyPrompt(promptIt, sliderTitleIt, subtitleIt)
           : promptIt.trim() || null,
         x_axis_label_it: encodeAxisEndpoints(endpointsIt.xNegative, endpointsIt.xPositive),
         y_axis_label_it: encodeAxisEndpoints(endpointsIt.yNegative, endpointsIt.yPositive),
       })
       setPrompt('')
+      setSliderTitle('')
       setSubtitle('')
       setEndpoints(EMPTY_ENDPOINTS)
       setPromptDe('')
+      setSliderTitleDe('')
       setSubtitleDe('')
       setEndpointsDe(EMPTY_ENDPOINTS)
       setPromptIt('')
+      setSliderTitleIt('')
       setSubtitleIt('')
       setEndpointsIt(EMPTY_ENDPOINTS)
       setSliderOnly(false)
@@ -349,26 +358,35 @@ export function AdminDashboard() {
             </label>
             <fieldset className="admin-translation-group">
               <legend>English</legend>
-              <label className="admin-wide">{sliderOnly ? 'Title' : 'Question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
+              <label className="admin-wide">Question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
               {sliderOnly && (
-                <label className="admin-wide">Subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} required /></label>
+                <>
+                  <label className="admin-wide">Slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitle} onChange={(event) => setSliderTitle(event.target.value)} required /></label>
+                  <label className="admin-wide">Slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} required /></label>
+                </>
               )}
               <EndpointInputs value={endpoints} onChange={setEndpoints} required sliderOnly={sliderOnly} />
               {!sliderOnly && <QuadrantPreview endpoints={endpoints} />}
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>German</legend>
-              <label className="admin-wide">German {sliderOnly ? 'title' : 'question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={promptDe} onChange={(event) => setPromptDe(event.target.value)} required={sliderOnly && Boolean(promptDe || subtitleDe)} /></label>
+              <label className="admin-wide">German question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptDe} onChange={(event) => setPromptDe(event.target.value)} required={sliderOnly && Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
               {sliderOnly && (
-                <label className="admin-wide">German subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleDe} onChange={(event) => setSubtitleDe(event.target.value)} required={Boolean(promptDe || subtitleDe)} /></label>
+                <>
+                  <label className="admin-wide">German slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleDe} onChange={(event) => setSliderTitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
+                  <label className="admin-wide">German slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleDe} onChange={(event) => setSubtitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
+                </>
               )}
               <EndpointInputs language="German" value={endpointsDe} onChange={setEndpointsDe} sliderOnly={sliderOnly} />
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>Italian</legend>
-              <label className="admin-wide">Italian {sliderOnly ? 'title' : 'question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={promptIt} onChange={(event) => setPromptIt(event.target.value)} required={sliderOnly && Boolean(promptIt || subtitleIt)} /></label>
+              <label className="admin-wide">Italian question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptIt} onChange={(event) => setPromptIt(event.target.value)} required={sliderOnly && Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
               {sliderOnly && (
-                <label className="admin-wide">Italian subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleIt} onChange={(event) => setSubtitleIt(event.target.value)} required={Boolean(promptIt || subtitleIt)} /></label>
+                <>
+                  <label className="admin-wide">Italian slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleIt} onChange={(event) => setSliderTitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
+                  <label className="admin-wide">Italian slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleIt} onChange={(event) => setSubtitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
+                </>
               )}
               <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} sliderOnly={sliderOnly} />
             </fieldset>
