@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react'
 import { ApiError, createParticipant, getActiveSession, submitResponse } from './api'
 import { ArtworkBrand } from './ArtworkBrand'
 import { CoordinatePlane } from './CoordinatePlane'
@@ -211,6 +218,63 @@ export default function App() {
     setMessage('')
   }
 
+  const setBalanceValue = (
+    axis: 'horizontal' | 'vertical',
+    clientX: number,
+    element: HTMLDivElement,
+  ) => {
+    if (submitState === 'submitting') return
+    const bounds = element.getBoundingClientRect()
+    if (bounds.width <= 0) return
+    const value = Math.min(1, Math.max(0, (clientX - bounds.left) / bounds.width))
+    const current = coordinate ?? { x: 0.5, y: 0.5 }
+    handleCoordinateChange(
+      axis === 'horizontal'
+        ? { ...current, x: value }
+        : { ...current, y: value },
+    )
+  }
+
+  const handleBalancePointerDown = (
+    axis: 'horizontal' | 'vertical',
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (submitState === 'submitting') return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setBalanceValue(axis, event.clientX, event.currentTarget)
+  }
+
+  const handleBalancePointerMove = (
+    axis: 'horizontal' | 'vertical',
+    event: PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      setBalanceValue(axis, event.clientX, event.currentTarget)
+    }
+  }
+
+  const handleBalanceKeyDown = (
+    axis: 'horizontal' | 'vertical',
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (
+      submitState === 'submitting'
+      || !['ArrowLeft', 'ArrowRight'].includes(event.key)
+    ) return
+    event.preventDefault()
+    const current = coordinate ?? { x: 0.5, y: 0.5 }
+    const currentValue = axis === 'horizontal' ? current.x : current.y
+    const value = Math.min(
+      1,
+      Math.max(0, currentValue + (event.key === 'ArrowRight' ? 0.02 : -0.02)),
+    )
+    handleCoordinateChange(
+      axis === 'horizontal'
+        ? { ...current, x: value }
+        : { ...current, y: value },
+    )
+  }
+
   const handleSubmit = async () => {
     if (!question || !coordinate || !identity || submitState === 'submitting') return
 
@@ -402,7 +466,26 @@ export default function App() {
                     ['horizontal', xEndpoints, coordinate?.x],
                     ['vertical', yEndpoints, coordinate?.y],
                   ] as const).map(([axis, endpoints, value]) => (
-                    <div className="balance-meter" data-testid={`balance-meter-${axis}`} key={axis}>
+                    <div
+                      className="balance-meter"
+                      data-testid={`balance-meter-${axis}`}
+                      key={axis}
+                      role="slider"
+                      tabIndex={submitState === 'submitting' ? -1 : 0}
+                      aria-label={`${endpoints.negative} — ${endpoints.positive}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={value === undefined ? undefined : Math.round(value * 100)}
+                      aria-valuetext={value === undefined
+                        ? text.coordinatePlane.noPoint
+                        : value === 0.5
+                          ? text.balanced
+                          : `${Math.round(Math.abs(value - 0.5) * 200)}% ${value < 0.5 ? endpoints.negative : endpoints.positive}`}
+                      aria-disabled={submitState === 'submitting'}
+                      onPointerDown={(event) => handleBalancePointerDown(axis, event)}
+                      onPointerMove={(event) => handleBalancePointerMove(axis, event)}
+                      onKeyDown={(event) => handleBalanceKeyDown(axis, event)}
+                    >
                       <div className="balance-meter__labels">
                         <span>{endpoints.negative}</span>
                         <span>{endpoints.positive}</span>

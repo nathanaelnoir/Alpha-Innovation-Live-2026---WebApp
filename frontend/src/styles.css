@@ -183,7 +183,9 @@ h1 {
 .position-readout--balance { padding: 10px 16px 8px; }
 .position-readout--balance .position-readout__label, .position-readout--balance::before { display: none; }
 .balance-readout { display: grid; gap: 9px; width: 100%; }
-.balance-meter { min-width: 0; }
+.balance-meter { min-width: 0; cursor: ew-resize; touch-action: pan-y; outline: none; }
+.balance-meter:focus-visible { box-shadow: 0 0 0 1px var(--blue); }
+.balance-meter[aria-disabled="true"] { cursor: wait; opacity: .64; }
 .balance-meter__labels { display: flex; align-items: end; justify-content: space-between; gap: 20px; color: var(--white); font-size: .56rem; font-weight: 700; line-height: 1.2; letter-spacing: .045em; text-transform: uppercase; }
 .balance-meter__labels span { max-width: 46%; overflow-wrap: anywhere; }
 .balance-meter__labels span:last-child { text-align: right; }
@@ -416,7 +418,6 @@ h1 {
     width: auto;
     margin: 0;
     padding: 9px 0 max(10px, env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(255,255,255,.28);
     background: linear-gradient(180deg, rgba(5,5,5,.94), var(--black) 24%);
   }
   .status-message { margin-bottom: 6px; }

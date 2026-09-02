@@ -321,11 +321,30 @@ describe('App', () => {
     expect(vertical).toHaveTextContent('AI-based decisions')
     expect(horizontal.querySelector('.balance-meter__marker')).not.toBeInTheDocument()
 
+    vi.spyOn(horizontal, 'getBoundingClientRect').mockReturnValue({
+      left: 10,
+      top: 0,
+      width: 200,
+      height: 30,
+      right: 210,
+      bottom: 30,
+      x: 10,
+      y: 0,
+      toJSON: () => ({}),
+    })
+    fireEvent.pointerDown(horizontal, { pointerId: 2, clientX: 160 })
+
+    expect(horizontal.querySelector('.balance-meter__marker')).toHaveStyle({ left: '75%' })
+    expect(vertical.querySelector('.balance-meter__marker')).toHaveStyle({ left: '50%' })
+
     fireEvent.pointerDown(surface, { pointerId: 1, clientX: 50, clientY: 50 })
 
     expect(horizontal.querySelector('.balance-meter__marker')).toHaveStyle({ left: '25%' })
     expect(vertical.querySelector('.balance-meter__marker')).toHaveStyle({ left: '75%' })
     expect(screen.queryByText('X 25% · Y 75%')).not.toBeInTheDocument()
+
+    fireEvent.keyDown(horizontal, { key: 'ArrowRight' })
+    expect(horizontal).toHaveAttribute('aria-valuenow', '27')
   })
 
   it('switches question, labels, interface text, and language preference', async () => {
