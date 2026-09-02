@@ -109,14 +109,20 @@ export function AdminDashboard() {
   const [prompt, setPrompt] = useState('')
   const [sliderTitle, setSliderTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
+  const [secondSliderTitle, setSecondSliderTitle] = useState('')
+  const [secondSubtitle, setSecondSubtitle] = useState('')
   const [endpoints, setEndpoints] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptDe, setPromptDe] = useState('')
   const [sliderTitleDe, setSliderTitleDe] = useState('')
   const [subtitleDe, setSubtitleDe] = useState('')
+  const [secondSliderTitleDe, setSecondSliderTitleDe] = useState('')
+  const [secondSubtitleDe, setSecondSubtitleDe] = useState('')
   const [endpointsDe, setEndpointsDe] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptIt, setPromptIt] = useState('')
   const [sliderTitleIt, setSliderTitleIt] = useState('')
   const [subtitleIt, setSubtitleIt] = useState('')
+  const [secondSliderTitleIt, setSecondSliderTitleIt] = useState('')
+  const [secondSubtitleIt, setSecondSubtitleIt] = useState('')
   const [endpointsIt, setEndpointsIt] = useState<EndpointFields>(EMPTY_ENDPOINTS)
 
   const refresh = async (organizerToken = token) => {
@@ -171,17 +177,35 @@ export function AdminDashboard() {
       await createAdminQuestion(token, {
         session_id: questionSessionId,
         prompt: sliderOnly
-          ? encodeSliderOnlyPrompt(prompt, sliderTitle, subtitle)
+          ? encodeSliderOnlyPrompt(
+              prompt,
+              sliderTitle,
+              subtitle,
+              secondSliderTitle,
+              secondSubtitle,
+            )
           : prompt,
         x_axis_label: encodeAxisEndpoints(endpoints.xNegative, endpoints.xPositive),
         y_axis_label: encodeAxisEndpoints(endpoints.yNegative, endpoints.yPositive),
-        prompt_de: sliderOnly && (promptDe.trim() || sliderTitleDe.trim() || subtitleDe.trim())
-          ? encodeSliderOnlyPrompt(promptDe, sliderTitleDe, subtitleDe)
+        prompt_de: sliderOnly && (promptDe.trim() || sliderTitleDe.trim() || subtitleDe.trim() || secondSliderTitleDe.trim() || secondSubtitleDe.trim())
+          ? encodeSliderOnlyPrompt(
+              promptDe,
+              sliderTitleDe,
+              subtitleDe,
+              secondSliderTitleDe,
+              secondSubtitleDe,
+            )
           : promptDe.trim() || null,
         x_axis_label_de: encodeAxisEndpoints(endpointsDe.xNegative, endpointsDe.xPositive),
         y_axis_label_de: encodeAxisEndpoints(endpointsDe.yNegative, endpointsDe.yPositive),
-        prompt_it: sliderOnly && (promptIt.trim() || sliderTitleIt.trim() || subtitleIt.trim())
-          ? encodeSliderOnlyPrompt(promptIt, sliderTitleIt, subtitleIt)
+        prompt_it: sliderOnly && (promptIt.trim() || sliderTitleIt.trim() || subtitleIt.trim() || secondSliderTitleIt.trim() || secondSubtitleIt.trim())
+          ? encodeSliderOnlyPrompt(
+              promptIt,
+              sliderTitleIt,
+              subtitleIt,
+              secondSliderTitleIt,
+              secondSubtitleIt,
+            )
           : promptIt.trim() || null,
         x_axis_label_it: encodeAxisEndpoints(endpointsIt.xNegative, endpointsIt.xPositive),
         y_axis_label_it: encodeAxisEndpoints(endpointsIt.yNegative, endpointsIt.yPositive),
@@ -189,14 +213,20 @@ export function AdminDashboard() {
       setPrompt('')
       setSliderTitle('')
       setSubtitle('')
+      setSecondSliderTitle('')
+      setSecondSubtitle('')
       setEndpoints(EMPTY_ENDPOINTS)
       setPromptDe('')
       setSliderTitleDe('')
       setSubtitleDe('')
+      setSecondSliderTitleDe('')
+      setSecondSubtitleDe('')
       setEndpointsDe(EMPTY_ENDPOINTS)
       setPromptIt('')
       setSliderTitleIt('')
       setSubtitleIt('')
+      setSecondSliderTitleIt('')
+      setSecondSubtitleIt('')
       setEndpointsIt(EMPTY_ENDPOINTS)
       setSliderOnly(false)
       await refresh()
