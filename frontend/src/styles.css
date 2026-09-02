@@ -417,7 +417,7 @@ h1 {
   .position-readout__label { display: none; }
   .position-readout__value { text-align: center; font-size: .68rem; }
   .position-readout--balance { min-height: 0; padding: 9px 8px 7px; }
-  .balance-readout { gap: 8px; }
+  .balance-readout { gap: 12px; }
   .balance-meter__labels { gap: 12px; font-size: clamp(.47rem, 2.2vw, .56rem); }
   .position-readout--slider-only { min-height: 0; margin: 0 auto; padding-block: 8px; }
   .position-readout--slider-only .balance-readout { gap: clamp(20px, 4dvh, 34px); }
