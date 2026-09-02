@@ -391,7 +391,7 @@ h1 {
   .survey-card { min-height: calc(100dvh - 58px); }
   .survey-content { --question-readout-gap: 12px; --coordinate-gap: 16px; padding: 14px 0 112px; }
   .question-heading { padding-inline: 4px; }
-  .question-heading h1 { font-size: clamp(1.2rem, 5.5vw, 1.55rem); line-height: 1.08; }
+  .question-heading h1 { font-size: clamp(1rem, 4.4vw, 1.25rem); line-height: 1.1; }
   .eyebrow { font-size: .5rem; line-height: 1.7; }
   .instruction { margin-top: 10px; font-size: .52rem; }
   .position-readout { min-height: 40px; padding-inline: 8px; }
