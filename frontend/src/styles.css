@@ -400,7 +400,7 @@ h1 {
   .privacy-note i { width: 6px; height: 6px; }
   .survey-card { min-height: calc(100dvh - 58px); }
   .survey-content {
-    --question-readout-gap: 12px;
+    --question-readout-gap: 16px;
     --coordinate-gap: 0;
     display: flex;
     height: calc(100dvh - 46px - max(14px, env(safe-area-inset-bottom)));
@@ -409,7 +409,7 @@ h1 {
   }
   .question-heading { padding-inline: 4px; }
   .question-heading h1 { font-size: clamp(1rem, 4.4vw, 1.25rem); line-height: 1.1; }
-  .survey-content--slider-only .question-heading { margin-bottom: 12px; }
+  .survey-content--slider-only .question-heading { margin-bottom: 16px; }
   .survey-content--slider-only .question-heading h1 { font-size: clamp(1.2rem, 5.5vw, 1.5rem); }
   .eyebrow { font-size: .5rem; line-height: 1.7; }
   .instruction { margin-top: 10px; font-size: .52rem; }
