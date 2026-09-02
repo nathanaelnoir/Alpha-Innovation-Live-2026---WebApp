@@ -14,6 +14,7 @@ import {
   wipeAdminCollectedData,
 } from './api'
 import type { AdminSession } from './types'
+import { encodeSliderOnlyPrompt } from './sliderOnly'
 
 vi.mock('./api', async (importOriginal) => {
   const original = await importOriginal<typeof import('./api')>()
@@ -168,6 +169,59 @@ describe('AdminDashboard', () => {
     })
     expect(createAdminSession).not.toHaveBeenCalled()
     expect(downloadAdminResults).not.toHaveBeenCalled()
+  })
+
+  it('creates a slider-only question using the existing prompt and axis fields', async () => {
+    vi.mocked(createAdminQuestion).mockResolvedValue({
+      id: 'question-slider',
+      session_id: closedSession.id,
+      position: 1,
+      prompt: encodeSliderOnlyPrompt('Decision making', 'Choose where responsibility belongs.'),
+      x_axis_label: 'Internal processes ↔ Products and services',
+      y_axis_label: 'Human-driven ↔ AI-based',
+      prompt_de: null,
+      x_axis_label_de: null,
+      y_axis_label_de: null,
+      prompt_it: null,
+      x_axis_label_it: null,
+      y_axis_label_it: null,
+      is_active: false,
+    })
+    render(<AdminDashboard />)
+    await userEvent.type(screen.getByLabelText('Organizer token'), 'organizer-secret')
+    await userEvent.click(screen.getByRole('button', { name: 'Open dashboard' }))
+    await userEvent.click(
+      screen.getByLabelText('Slider-only layout (hide the coordinate plane)'),
+    )
+
+    await userEvent.type(screen.getByLabelText('Title'), 'Decision making')
+    await userEvent.type(
+      screen.getByLabelText('Subtitle'),
+      'Choose where responsibility belongs.',
+    )
+    await userEvent.type(screen.getByLabelText('First slider — left'), 'Internal processes')
+    await userEvent.type(screen.getByLabelText('First slider — right'), 'Products and services')
+    await userEvent.type(screen.getByLabelText('Second slider — left'), 'Human-driven')
+    await userEvent.type(screen.getByLabelText('Second slider — right'), 'AI-based')
+    await userEvent.click(screen.getByRole('button', { name: 'Add question' }))
+
+    await waitFor(() => {
+      expect(createAdminQuestion).toHaveBeenCalledWith('organizer-secret', {
+        session_id: closedSession.id,
+        prompt: encodeSliderOnlyPrompt(
+          'Decision making',
+          'Choose where responsibility belongs.',
+        ),
+        x_axis_label: 'Internal processes ↔ Products and services',
+        y_axis_label: 'Human-driven ↔ AI-based',
+        prompt_de: null,
+        x_axis_label_de: null,
+        y_axis_label_de: null,
+        prompt_it: null,
+        x_axis_label_it: null,
+        y_axis_label_it: null,
+      })
+    })
   })
 
   it('warns before deleting closed questions and sessions', async () => {

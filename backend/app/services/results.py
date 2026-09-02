@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import logging
 import math
 import re
@@ -13,6 +14,7 @@ from app.repositories.results import ResultRow, list_results
 logger = logging.getLogger(__name__)
 
 CSV_DELIMITER = ";"
+SLIDER_ONLY_PROMPT_PREFIX = "[[slider-only:v1]]"
 CSV_COLUMNS = (
     "response_id",
     "participant_id",
@@ -48,7 +50,7 @@ def build_results_csv(rows: list[ResultRow]) -> str:
                 row.response_id,
                 row.participant_id,
                 row.session_title,
-                row.question,
+                readable_question(row.question),
                 row.x,
                 row.y,
                 readable_axis_label(row.x_axis_label, "Horizontal"),
@@ -68,6 +70,26 @@ def readable_axis_label(label: str | None, fallback: str) -> str:
         return fallback
     cleaned = re.sub(r"\s*\([^)]*\)", "", label).strip()
     return cleaned or fallback
+
+
+def readable_question(prompt: str) -> str:
+    """Return the visible title for an encoded slider-only question."""
+    if not prompt.startswith(SLIDER_ONLY_PROMPT_PREFIX):
+        return prompt
+    try:
+        value = json.loads(prompt.removeprefix(SLIDER_ONLY_PROMPT_PREFIX))
+    except json.JSONDecodeError:
+        return prompt
+    if (
+        isinstance(value, list)
+        and len(value) == 2
+        and isinstance(value[0], str)
+        and value[0].strip()
+        and isinstance(value[1], str)
+        and value[1].strip()
+    ):
+        return value[0]
+    return prompt
 
 
 def display_percentage(value: float) -> str:

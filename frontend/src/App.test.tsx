@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { ApiError, createParticipant, getActiveSession, submitResponse } from './api'
+import { encodeSliderOnlyPrompt } from './sliderOnly'
 import type { ActiveSurveySession, ResponseAccepted } from './types'
 
 vi.mock('./api', async (importOriginal) => {
@@ -345,6 +346,64 @@ describe('App', () => {
 
     fireEvent.keyDown(horizontal, { key: 'ArrowRight' })
     expect(horizontal).toHaveAttribute('aria-valuenow', '27')
+  })
+
+  it('renders a focused slider-only question and submits the same coordinates', async () => {
+    const sliderQuestion = {
+      ...question,
+      prompt: encodeSliderOnlyPrompt(
+        'Decision making',
+        'Choose where responsibility should sit for this situation.',
+      ),
+      x_axis_label: 'Internal processes ↔ Products and services',
+      y_axis_label: 'Human-driven decisions ↔ AI-based decisions',
+    }
+    mockedCreateParticipant.mockResolvedValue(participant)
+    mockedGetActiveSession.mockResolvedValue({
+      ...surveySession,
+      questions: [sliderQuestion],
+    })
+    mockedSubmitResponse.mockResolvedValue({
+      ...accepted,
+      question_id: sliderQuestion.id,
+      x: 0.75,
+      y: 0.25,
+    })
+    render(<App />)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Decision making' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Choose where responsibility should sit for this situation.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('coordinate-surface')).not.toBeInTheDocument()
+
+    const bounds = {
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 40,
+      right: 200,
+      bottom: 40,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }
+    const horizontal = screen.getByTestId('balance-meter-horizontal')
+    const vertical = screen.getByTestId('balance-meter-vertical')
+    vi.spyOn(horizontal, 'getBoundingClientRect').mockReturnValue(bounds)
+    vi.spyOn(vertical, 'getBoundingClientRect').mockReturnValue(bounds)
+    fireEvent.pointerDown(horizontal, { pointerId: 3, clientX: 150 })
+    fireEvent.pointerDown(vertical, { pointerId: 4, clientX: 50 })
+    await userEvent.click(screen.getByRole('button', { name: 'Send response' }))
+
+    expect(mockedSubmitResponse).toHaveBeenCalledWith(
+      sliderQuestion.id,
+      { x: 0.75, y: 0.25 },
+      participant.participantToken,
+      expect.any(AbortSignal),
+    )
   })
 
   it('switches question, labels, interface text, and language preference', async () => {

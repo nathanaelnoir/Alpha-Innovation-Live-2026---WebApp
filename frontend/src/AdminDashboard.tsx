@@ -12,6 +12,12 @@ import {
   wipeAdminCollectedData,
 } from './api'
 import { encodeAxisEndpoints } from './quadrants'
+import {
+  displayPrompt,
+  encodeSliderOnlyPrompt,
+  SLIDER_ONLY_SUBTITLE_MAX_LENGTH,
+  SLIDER_ONLY_TITLE_MAX_LENGTH,
+} from './sliderOnly'
 import type { AdminQuestion, AdminSession } from './types'
 
 interface EndpointFields {
@@ -33,28 +39,38 @@ interface EndpointInputsProps {
   value: EndpointFields
   onChange: (value: EndpointFields) => void
   required?: boolean
+  sliderOnly?: boolean
 }
 
-function EndpointInputs({ language, value, onChange, required = false }: EndpointInputsProps) {
+function EndpointInputs({
+  language,
+  value,
+  onChange,
+  required = false,
+  sliderOnly = false,
+}: EndpointInputsProps) {
   const prefix = language ? `${language} ` : ''
   const update = (field: keyof EndpointFields, nextValue: string) => {
     onChange({ ...value, [field]: nextValue })
   }
   const xRequired = required || Boolean(value.xNegative || value.xPositive)
   const yRequired = required || Boolean(value.yNegative || value.yPositive)
+  const labels = sliderOnly
+    ? ['First slider — left', 'First slider — right', 'Second slider — left', 'Second slider — right']
+    : ['X negative / left', 'X positive / right', 'Y negative / bottom', 'Y positive / top']
 
   return (
     <>
-      <label>{prefix}X negative / left
+      <label>{prefix}{labels[0]}
         <input maxLength={90} value={value.xNegative} onChange={(event) => update('xNegative', event.target.value)} required={xRequired} />
       </label>
-      <label>{prefix}X positive / right
+      <label>{prefix}{labels[1]}
         <input maxLength={90} value={value.xPositive} onChange={(event) => update('xPositive', event.target.value)} required={xRequired} />
       </label>
-      <label>{prefix}Y negative / bottom
+      <label>{prefix}{labels[2]}
         <input maxLength={90} value={value.yNegative} onChange={(event) => update('yNegative', event.target.value)} required={yRequired} />
       </label>
-      <label>{prefix}Y positive / top
+      <label>{prefix}{labels[3]}
         <input maxLength={90} value={value.yPositive} onChange={(event) => update('yPositive', event.target.value)} required={yRequired} />
       </label>
     </>
@@ -88,11 +104,15 @@ export function AdminDashboard() {
   const [wipeConfirmation, setWipeConfirmation] = useState('')
   const [sessionTitle, setSessionTitle] = useState('')
   const [questionSessionId, setQuestionSessionId] = useState('')
+  const [sliderOnly, setSliderOnly] = useState(false)
   const [prompt, setPrompt] = useState('')
+  const [subtitle, setSubtitle] = useState('')
   const [endpoints, setEndpoints] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptDe, setPromptDe] = useState('')
+  const [subtitleDe, setSubtitleDe] = useState('')
   const [endpointsDe, setEndpointsDe] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptIt, setPromptIt] = useState('')
+  const [subtitleIt, setSubtitleIt] = useState('')
   const [endpointsIt, setEndpointsIt] = useState<EndpointFields>(EMPTY_ENDPOINTS)
 
   const refresh = async (organizerToken = token) => {
@@ -146,22 +166,30 @@ export function AdminDashboard() {
     void runAction(async () => {
       await createAdminQuestion(token, {
         session_id: questionSessionId,
-        prompt,
+        prompt: sliderOnly ? encodeSliderOnlyPrompt(prompt, subtitle) : prompt,
         x_axis_label: encodeAxisEndpoints(endpoints.xNegative, endpoints.xPositive),
         y_axis_label: encodeAxisEndpoints(endpoints.yNegative, endpoints.yPositive),
-        prompt_de: promptDe.trim() || null,
+        prompt_de: sliderOnly && (promptDe.trim() || subtitleDe.trim())
+          ? encodeSliderOnlyPrompt(promptDe, subtitleDe)
+          : promptDe.trim() || null,
         x_axis_label_de: encodeAxisEndpoints(endpointsDe.xNegative, endpointsDe.xPositive),
         y_axis_label_de: encodeAxisEndpoints(endpointsDe.yNegative, endpointsDe.yPositive),
-        prompt_it: promptIt.trim() || null,
+        prompt_it: sliderOnly && (promptIt.trim() || subtitleIt.trim())
+          ? encodeSliderOnlyPrompt(promptIt, subtitleIt)
+          : promptIt.trim() || null,
         x_axis_label_it: encodeAxisEndpoints(endpointsIt.xNegative, endpointsIt.xPositive),
         y_axis_label_it: encodeAxisEndpoints(endpointsIt.yNegative, endpointsIt.yPositive),
       })
       setPrompt('')
+      setSubtitle('')
       setEndpoints(EMPTY_ENDPOINTS)
       setPromptDe('')
+      setSubtitleDe('')
       setEndpointsDe(EMPTY_ENDPOINTS)
       setPromptIt('')
+      setSubtitleIt('')
       setEndpointsIt(EMPTY_ENDPOINTS)
+      setSliderOnly(false)
       await refresh()
     })
   }
@@ -177,12 +205,13 @@ export function AdminDashboard() {
   }
 
   const handleDeleteQuestion = (question: AdminQuestion) => {
-    const warning = `Permanently delete “${question.prompt}” and every response collected for it? This cannot be undone.`
+    const visiblePrompt = displayPrompt(question.prompt)
+    const warning = `Permanently delete “${visiblePrompt}” and every response collected for it? This cannot be undone.`
     if (!window.confirm(warning)) return
     void runAction(async () => {
       await deleteAdminQuestion(token, question.id)
       await refresh()
-      setNotice(`Deleted question “${question.prompt}” and its responses.`)
+      setNotice(`Deleted question “${visiblePrompt}” and its responses.`)
     })
   }
 
@@ -278,7 +307,7 @@ export function AdminDashboard() {
                   .sort((left, right) => left.position - right.position)
                   .map((question) => (
                     <li key={question.id}>
-                      <span>{question.prompt}</span>
+                      <span>{displayPrompt(question.prompt)}</span>
                       <button
                         className="admin-danger-button"
                         type="button"
@@ -310,21 +339,38 @@ export function AdminDashboard() {
             <label>Session<select value={questionSessionId} onChange={(event) => setQuestionSessionId(event.target.value)} required>
               {closedSessions.map((session) => <option key={session.id} value={session.id}>{session.title}</option>)}
             </select></label>
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={sliderOnly}
+                onChange={(event) => setSliderOnly(event.target.checked)}
+              />
+              Slider-only layout (hide the coordinate plane)
+            </label>
             <fieldset className="admin-translation-group">
               <legend>English</legend>
-              <label className="admin-wide">Question<input value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
-              <EndpointInputs value={endpoints} onChange={setEndpoints} required />
-              <QuadrantPreview endpoints={endpoints} />
+              <label className="admin-wide">{sliderOnly ? 'Title' : 'Question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
+              {sliderOnly && (
+                <label className="admin-wide">Subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} required /></label>
+              )}
+              <EndpointInputs value={endpoints} onChange={setEndpoints} required sliderOnly={sliderOnly} />
+              {!sliderOnly && <QuadrantPreview endpoints={endpoints} />}
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>German</legend>
-              <label className="admin-wide">German question<input value={promptDe} onChange={(event) => setPromptDe(event.target.value)} /></label>
-              <EndpointInputs language="German" value={endpointsDe} onChange={setEndpointsDe} />
+              <label className="admin-wide">German {sliderOnly ? 'title' : 'question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={promptDe} onChange={(event) => setPromptDe(event.target.value)} required={sliderOnly && Boolean(promptDe || subtitleDe)} /></label>
+              {sliderOnly && (
+                <label className="admin-wide">German subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleDe} onChange={(event) => setSubtitleDe(event.target.value)} required={Boolean(promptDe || subtitleDe)} /></label>
+              )}
+              <EndpointInputs language="German" value={endpointsDe} onChange={setEndpointsDe} sliderOnly={sliderOnly} />
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>Italian</legend>
-              <label className="admin-wide">Italian question<input value={promptIt} onChange={(event) => setPromptIt(event.target.value)} /></label>
-              <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} />
+              <label className="admin-wide">Italian {sliderOnly ? 'title' : 'question'}<input maxLength={sliderOnly ? SLIDER_ONLY_TITLE_MAX_LENGTH : 1000} value={promptIt} onChange={(event) => setPromptIt(event.target.value)} required={sliderOnly && Boolean(promptIt || subtitleIt)} /></label>
+              {sliderOnly && (
+                <label className="admin-wide">Italian subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleIt} onChange={(event) => setSubtitleIt(event.target.value)} required={Boolean(promptIt || subtitleIt)} /></label>
+              )}
+              <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} sliderOnly={sliderOnly} />
             </fieldset>
             <button type="submit" disabled={busy}>Add question</button>
           </form>

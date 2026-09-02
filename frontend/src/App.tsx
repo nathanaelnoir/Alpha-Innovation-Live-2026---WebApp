@@ -25,6 +25,7 @@ import {
 import { loadCompletedQuestions, markQuestionCompleted } from './sessionProgress'
 import { parseAxisEndpoints } from './quadrants'
 import { ResponseStream } from './ResponseStream'
+import { parseSliderOnlyPrompt } from './sliderOnly'
 import { WaitingParticles } from './WaitingParticles'
 import type {
   ActiveQuestion,
@@ -324,6 +325,12 @@ export default function App() {
   const yEndpoints = localizedQuestion
     ? parseAxisEndpoints(localizedQuestion.yAxisLabel)
     : null
+  const sliderContent = localizedQuestion
+    ? parseSliderOnlyPrompt(localizedQuestion.prompt)
+    : null
+  const isSliderOnly = sliderContent !== null
+    && xEndpoints !== null
+    && yEndpoints !== null
   const localizedMessage = message ? text[message] : ''
 
   const selectLanguage = (nextLanguage: Language) => {
@@ -444,18 +451,19 @@ export default function App() {
         )}
 
         {loadState === 'ready' && question && surveySession && (
-          <div className="survey-content">
+          <div className={`survey-content${isSliderOnly ? ' survey-content--slider-only' : ''}`}>
             <div className="question-heading">
               <div className="question-index" aria-hidden="true">
                 <span>Q/{question.position}</span>
                 <span>{String(surveySession.questions.length).padStart(4, '0')}</span>
               </div>
-              <h1>{localizedQuestion?.prompt}</h1>
+              <h1>{sliderContent?.title ?? localizedQuestion?.prompt}</h1>
+              {sliderContent && <p className="slider-only-subtitle">{sliderContent.subtitle}</p>}
               {/* <p className="instruction">TAP OR DRAG ON THE FIELD · ADJUST BEFORE TRANSMISSION</p> */}
             </div>
 
             <div
-              className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${coordinate ? ' position-readout--active' : ''}`}
+              className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${isSliderOnly ? ' position-readout--slider-only' : ''}${coordinate ? ' position-readout--active' : ''}`}
               aria-live="polite"
               aria-label={text.currentPosition}
             >
@@ -531,14 +539,16 @@ export default function App() {
               )}
             </div>
 
-            <CoordinatePlane
-              value={coordinate}
-              onChange={handleCoordinateChange}
-              xAxisLabel={localizedQuestion?.xAxisLabel ?? null}
-              yAxisLabel={localizedQuestion?.yAxisLabel ?? null}
-              disabled={submitState === 'submitting'}
-              text={text.coordinatePlane}
-            />
+            {!isSliderOnly && (
+              <CoordinatePlane
+                value={coordinate}
+                onChange={handleCoordinateChange}
+                xAxisLabel={localizedQuestion?.xAxisLabel ?? null}
+                yAxisLabel={localizedQuestion?.yAxisLabel ?? null}
+                disabled={submitState === 'submitting'}
+                text={text.coordinatePlane}
+              />
+            )}
 
             <div className="submission-area">
               {(submitState === 'submitting' || submitState === 'error') && (

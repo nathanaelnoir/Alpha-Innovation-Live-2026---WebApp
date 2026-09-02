@@ -21,6 +21,7 @@ from app.services.results import (
     build_results_csv,
     display_percentage,
     readable_axis_label,
+    readable_question,
 )
 
 EXPORT_TOKEN = "organizer-results-token-with-32-characters"
@@ -89,6 +90,31 @@ def test_display_columns_match_frontend_label_and_percentage_logic() -> None:
     assert display_percentage(0.0) == "0%"
     assert display_percentage(0.345) == "35%"
     assert display_percentage(1.0) == "100%"
+
+
+def test_slider_only_question_export_uses_the_visible_title() -> None:
+    encoded = '[[slider-only:v1]]["Decision making","Choose a position."]'
+    row = make_row()
+    row = ResultRow(
+        response_id=row.response_id,
+        participant_id=row.participant_id,
+        session_title=row.session_title,
+        question=encoded,
+        x_axis_label=row.x_axis_label,
+        y_axis_label=row.y_axis_label,
+        x=row.x,
+        y=row.y,
+        submitted_at=row.submitted_at,
+        updated_at=row.updated_at,
+    )
+    exported_rows = list(
+        csv.reader(io.StringIO(build_results_csv([row])), delimiter=CSV_DELIMITER)
+    )
+
+    assert readable_question(encoded) == "Decision making"
+    assert exported_rows[1][3] == "Decision making"
+    assert readable_question("A normal question") == "A normal question"
+    assert readable_question("[[slider-only:v1]]broken") == ("[[slider-only:v1]]broken")
 
 
 def test_empty_csv_export_still_contains_header() -> None:
