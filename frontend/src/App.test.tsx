@@ -385,6 +385,7 @@ describe('App', () => {
     expect(
       screen.getByText('Choose how strongly technology should influence the decision.'),
     ).toBeInTheDocument()
+    expect(screen.queryByText('Balanced')).not.toBeInTheDocument()
     expect(screen.queryByTestId('coordinate-surface')).not.toBeInTheDocument()
 
     const bounds = {

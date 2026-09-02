@@ -203,7 +203,6 @@ h1 {
 .position-readout--slider-only .balance-meter__track::before, .position-readout--slider-only .balance-meter__track::after { top: -3px; height: 11px; }
 .position-readout--slider-only .balance-meter__center { top: -4px; height: 13px; }
 .position-readout--slider-only .balance-meter__marker { width: 19px; height: 19px; }
-.position-readout--slider-only .balance-meter__balanced { margin-top: 7px; font-size: .5rem; }
 .balance-meter__intro { margin-bottom: 16px; text-align: center; }
 .balance-meter__intro h2 { margin: 0; color: var(--white); font-family: Arial, Helvetica, sans-serif; font-size: clamp(1rem, 2vw, 1.3rem); line-height: 1.15; }
 .balance-meter__intro p { margin: 7px auto 0; color: #9a9a9a; font-size: clamp(.66rem, 1.4vw, .8rem); line-height: 1.5; letter-spacing: .015em; }

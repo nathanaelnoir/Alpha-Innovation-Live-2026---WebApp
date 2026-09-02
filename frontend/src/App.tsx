@@ -512,7 +512,9 @@ export default function App() {
                           />
                         )}
                       </div>
-                      <span className="balance-meter__balanced">{text.balanced}</span>
+                      {!isSliderOnly && (
+                        <span className="balance-meter__balanced">{text.balanced}</span>
+                      )}
                     </div>
                   ))}
                   <span className="visually-hidden">
