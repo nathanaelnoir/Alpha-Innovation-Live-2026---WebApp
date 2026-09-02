@@ -94,8 +94,9 @@ def test_display_columns_match_frontend_label_and_percentage_logic() -> None:
 
 def test_slider_only_question_export_uses_the_visible_title() -> None:
     encoded = (
-        '[[slider-only:v2]]["Who should make these decisions?",'
-        '"Decision making","Choose a position."]'
+        '[[slider-only:v3]]["Who should make these decisions?",'
+        '"Decision making","Choose a position.",'
+        '"Degree of automation","Choose the degree."]'
     )
     row = make_row()
     row = ResultRow(

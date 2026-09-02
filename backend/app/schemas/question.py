@@ -23,13 +23,13 @@ class QuestionCreate(BaseModel):
 
     session_id: uuid.UUID = Field(description="Session that owns this question.")
     position: int | None = Field(default=None, ge=1)
-    prompt: str = Field(min_length=1, max_length=1000)
+    prompt: str = Field(min_length=1, max_length=2000)
     x_axis_label: str | None = Field(default=None, max_length=200)
     y_axis_label: str | None = Field(default=None, max_length=200)
-    prompt_de: str | None = Field(default=None, max_length=1000)
+    prompt_de: str | None = Field(default=None, max_length=2000)
     x_axis_label_de: str | None = Field(default=None, max_length=200)
     y_axis_label_de: str | None = Field(default=None, max_length=200)
-    prompt_it: str | None = Field(default=None, max_length=1000)
+    prompt_it: str | None = Field(default=None, max_length=2000)
     x_axis_label_it: str | None = Field(default=None, max_length=200)
     y_axis_label_it: str | None = Field(default=None, max_length=200)
 

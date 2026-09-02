@@ -355,6 +355,8 @@ describe('App', () => {
         'Who should make these decisions?',
         'Decision making',
         'Choose where responsibility should sit for this situation.',
+        'Degree of automation',
+        'Choose how strongly technology should influence the decision.',
       ),
       x_axis_label: 'Internal processes ↔ Products and services',
       y_axis_label: 'Human-driven decisions ↔ AI-based decisions',
@@ -378,6 +380,10 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Decision making' })).toBeInTheDocument()
     expect(
       screen.getByText('Choose where responsibility should sit for this situation.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Degree of automation' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Choose how strongly technology should influence the decision.'),
     ).toBeInTheDocument()
     expect(screen.queryByTestId('coordinate-surface')).not.toBeInTheDocument()
 

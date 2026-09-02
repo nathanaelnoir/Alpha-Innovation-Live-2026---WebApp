@@ -391,8 +391,10 @@ export function AdminDashboard() {
               <label className="admin-wide">Question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
               {sliderOnly && (
                 <>
-                  <label className="admin-wide">Slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitle} onChange={(event) => setSliderTitle(event.target.value)} required /></label>
-                  <label className="admin-wide">Slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} required /></label>
+                  <label className="admin-wide">First slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitle} onChange={(event) => setSliderTitle(event.target.value)} required /></label>
+                  <label className="admin-wide">First slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitle} onChange={(event) => setSubtitle(event.target.value)} required /></label>
+                  <label className="admin-wide">Second slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={secondSliderTitle} onChange={(event) => setSecondSliderTitle(event.target.value)} required /></label>
+                  <label className="admin-wide">Second slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={secondSubtitle} onChange={(event) => setSecondSubtitle(event.target.value)} required /></label>
                 </>
               )}
               <EndpointInputs value={endpoints} onChange={setEndpoints} required sliderOnly={sliderOnly} />
@@ -400,22 +402,26 @@ export function AdminDashboard() {
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>German</legend>
-              <label className="admin-wide">German question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptDe} onChange={(event) => setPromptDe(event.target.value)} required={sliderOnly && Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
+              <label className="admin-wide">German question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptDe} onChange={(event) => setPromptDe(event.target.value)} required={sliderOnly && Boolean(promptDe || sliderTitleDe || subtitleDe || secondSliderTitleDe || secondSubtitleDe)} /></label>
               {sliderOnly && (
                 <>
-                  <label className="admin-wide">German slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleDe} onChange={(event) => setSliderTitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
-                  <label className="admin-wide">German slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleDe} onChange={(event) => setSubtitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe)} /></label>
+                  <label className="admin-wide">German first slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleDe} onChange={(event) => setSliderTitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe || secondSliderTitleDe || secondSubtitleDe)} /></label>
+                  <label className="admin-wide">German first slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleDe} onChange={(event) => setSubtitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe || secondSliderTitleDe || secondSubtitleDe)} /></label>
+                  <label className="admin-wide">German second slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={secondSliderTitleDe} onChange={(event) => setSecondSliderTitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe || secondSliderTitleDe || secondSubtitleDe)} /></label>
+                  <label className="admin-wide">German second slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={secondSubtitleDe} onChange={(event) => setSecondSubtitleDe(event.target.value)} required={Boolean(promptDe || sliderTitleDe || subtitleDe || secondSliderTitleDe || secondSubtitleDe)} /></label>
                 </>
               )}
               <EndpointInputs language="German" value={endpointsDe} onChange={setEndpointsDe} sliderOnly={sliderOnly} />
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>Italian</legend>
-              <label className="admin-wide">Italian question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptIt} onChange={(event) => setPromptIt(event.target.value)} required={sliderOnly && Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
+              <label className="admin-wide">Italian question<input maxLength={sliderOnly ? SLIDER_ONLY_QUESTION_MAX_LENGTH : 1000} value={promptIt} onChange={(event) => setPromptIt(event.target.value)} required={sliderOnly && Boolean(promptIt || sliderTitleIt || subtitleIt || secondSliderTitleIt || secondSubtitleIt)} /></label>
               {sliderOnly && (
                 <>
-                  <label className="admin-wide">Italian slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleIt} onChange={(event) => setSliderTitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
-                  <label className="admin-wide">Italian slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleIt} onChange={(event) => setSubtitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt)} /></label>
+                  <label className="admin-wide">Italian first slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={sliderTitleIt} onChange={(event) => setSliderTitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt || secondSliderTitleIt || secondSubtitleIt)} /></label>
+                  <label className="admin-wide">Italian first slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={subtitleIt} onChange={(event) => setSubtitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt || secondSliderTitleIt || secondSubtitleIt)} /></label>
+                  <label className="admin-wide">Italian second slider title<input maxLength={SLIDER_ONLY_TITLE_MAX_LENGTH} value={secondSliderTitleIt} onChange={(event) => setSecondSliderTitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt || secondSliderTitleIt || secondSubtitleIt)} /></label>
+                  <label className="admin-wide">Italian second slider subtitle<textarea rows={3} maxLength={SLIDER_ONLY_SUBTITLE_MAX_LENGTH} value={secondSubtitleIt} onChange={(event) => setSecondSubtitleIt(event.target.value)} required={Boolean(promptIt || sliderTitleIt || subtitleIt || secondSliderTitleIt || secondSubtitleIt)} /></label>
                 </>
               )}
               <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} sliderOnly={sliderOnly} />

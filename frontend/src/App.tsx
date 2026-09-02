@@ -461,13 +461,6 @@ export default function App() {
               {/* <p className="instruction">TAP OR DRAG ON THE FIELD · ADJUST BEFORE TRANSMISSION</p> */}
             </div>
 
-            {sliderContent && (
-              <div className="slider-only-intro">
-                {sliderContent.title && <h2>{sliderContent.title}</h2>}
-                <p>{sliderContent.subtitle}</p>
-              </div>
-            )}
-
             <div
               className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${isSliderOnly ? ' position-readout--slider-only' : ''}${coordinate ? ' position-readout--active' : ''}`}
               aria-live="polite"
@@ -477,9 +470,9 @@ export default function App() {
               {xEndpoints && yEndpoints ? (
                 <div className="balance-readout">
                   {([
-                    ['horizontal', xEndpoints, coordinate?.x],
-                    ['vertical', yEndpoints, coordinate?.y],
-                  ] as const).map(([axis, endpoints, value]) => (
+                    ['horizontal', xEndpoints, coordinate?.x, sliderContent?.sliders[0]],
+                    ['vertical', yEndpoints, coordinate?.y, sliderContent?.sliders[1]],
+                  ] as const).map(([axis, endpoints, value, description]) => (
                     <div
                       className="balance-meter"
                       data-testid={`balance-meter-${axis}`}
@@ -500,6 +493,12 @@ export default function App() {
                       onPointerMove={(event) => handleBalancePointerMove(axis, event)}
                       onKeyDown={(event) => handleBalanceKeyDown(axis, event)}
                     >
+                      {(description?.title || description?.subtitle) && (
+                        <div className="balance-meter__intro">
+                          {description.title && <h2>{description.title}</h2>}
+                          {description.subtitle && <p>{description.subtitle}</p>}
+                        </div>
+                      )}
                       <div className="balance-meter__labels">
                         <span>{endpoints.negative}</span>
                         <span>{endpoints.positive}</span>

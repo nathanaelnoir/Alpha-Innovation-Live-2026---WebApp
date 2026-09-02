@@ -180,6 +180,8 @@ describe('AdminDashboard', () => {
         'Who should make these decisions?',
         'Decision making',
         'Choose where responsibility belongs.',
+        'Degree of automation',
+        'Choose how much automation should be involved.',
       ),
       x_axis_label: 'Internal processes ↔ Products and services',
       y_axis_label: 'Human-driven ↔ AI-based',
@@ -202,10 +204,15 @@ describe('AdminDashboard', () => {
       screen.getByLabelText('Question'),
       'Who should make these decisions?',
     )
-    await userEvent.type(screen.getByLabelText('Slider title'), 'Decision making')
+    await userEvent.type(screen.getByLabelText('First slider title'), 'Decision making')
     await userEvent.type(
-      screen.getByLabelText('Slider subtitle'),
+      screen.getByLabelText('First slider subtitle'),
       'Choose where responsibility belongs.',
+    )
+    await userEvent.type(screen.getByLabelText('Second slider title'), 'Degree of automation')
+    await userEvent.type(
+      screen.getByLabelText('Second slider subtitle'),
+      'Choose how much automation should be involved.',
     )
     await userEvent.type(screen.getByLabelText('First slider — left'), 'Internal processes')
     await userEvent.type(screen.getByLabelText('First slider — right'), 'Products and services')
@@ -220,6 +227,8 @@ describe('AdminDashboard', () => {
           'Who should make these decisions?',
           'Decision making',
           'Choose where responsibility belongs.',
+          'Degree of automation',
+          'Choose how much automation should be involved.',
         ),
         x_axis_label: 'Internal processes ↔ Products and services',
         y_axis_label: 'Human-driven ↔ AI-based',

@@ -14,7 +14,11 @@ from app.repositories.results import ResultRow, list_results
 logger = logging.getLogger(__name__)
 
 CSV_DELIMITER = ";"
-SLIDER_ONLY_PROMPT_PREFIXES = ("[[slider-only:v2]]", "[[slider-only:v1]]")
+SLIDER_ONLY_PROMPT_PREFIXES = (
+    "[[slider-only:v3]]",
+    "[[slider-only:v2]]",
+    "[[slider-only:v1]]",
+)
 CSV_COLUMNS = (
     "response_id",
     "participant_id",
@@ -86,7 +90,7 @@ def readable_question(prompt: str) -> str:
         return prompt
     if (
         isinstance(value, list)
-        and len(value) in (2, 3)
+        and len(value) in (2, 3, 5)
         and isinstance(value[0], str)
         and value[0].strip()
         and all(isinstance(item, str) and item.strip() for item in value[1:])

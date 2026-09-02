@@ -103,10 +103,11 @@ change. Questions with older single-value axis labels retain the legacy scale
 display.
 
 Questions may instead use the admin form's slider-only layout. This presents the
-localized survey question followed by a slider-section title, a longer subtitle,
-and two enlarged interactive sliders without the coordinate plane. The three
-texts and layout marker are encoded in the existing localized prompt fields;
-the four slider endpoints continue to use the existing axis-label fields.
+localized survey question followed by two enlarged interactive sliders without
+the coordinate plane. Each slider has its own title, longer subtitle, and two
+endpoint labels. The question, both slider descriptions, and layout marker are
+encoded in the existing localized prompt fields; the four endpoints continue to
+use the existing axis-label fields.
 Submitted and exported responses retain the same normalized `x` and `y` values,
 and CSV exports show the visible question rather than the internal prompt
 encoding.
