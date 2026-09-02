@@ -319,7 +319,6 @@ describe('App', () => {
     expect(horizontal).toHaveTextContent('Products and services')
     expect(vertical).toHaveTextContent('Human-driven decisions')
     expect(vertical).toHaveTextContent('AI-based decisions')
-    expect(screen.getByText('Move toward a label when it applies more strongly.')).toBeInTheDocument()
     expect(horizontal.querySelector('.balance-meter__marker')).not.toBeInTheDocument()
 
     fireEvent.pointerDown(surface, { pointerId: 1, clientX: 50, clientY: 50 })

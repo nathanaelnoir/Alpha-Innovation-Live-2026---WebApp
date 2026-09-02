@@ -398,7 +398,6 @@ export default function App() {
               <span className="position-readout__label">{text.livePosition}</span>
               {xEndpoints && yEndpoints ? (
                 <div className="balance-readout">
-                  <p>{text.balanceInstruction}</p>
                   {([
                     ['horizontal', xEndpoints, coordinate?.x],
                     ['vertical', yEndpoints, coordinate?.y],
