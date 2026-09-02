@@ -1,5 +1,6 @@
-import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
+import { useId, useRef, type KeyboardEvent, type PointerEvent } from 'react'
 import { coordinateToPercent, normalizePointer } from './coordinates'
+import { parseAxisEndpoints, quadrantMeaning } from './quadrants'
 import type { Coordinate } from './types'
 
 interface CoordinatePlaneProps {
@@ -40,6 +41,7 @@ export function CoordinatePlane({
   text = defaultText,
 }: CoordinatePlaneProps) {
   const surfaceRef = useRef<HTMLDivElement>(null)
+  const quadrantDescriptionId = useId()
 
   const selectFromPointer = (event: PointerEvent<HTMLDivElement>) => {
     if (disabled || !surfaceRef.current) return
@@ -80,8 +82,19 @@ export function CoordinatePlane({
   }
 
   const point = value ? coordinateToPercent(value) : null
+  const xEndpoints = parseAxisEndpoints(xAxisLabel)
+  const yEndpoints = parseAxisEndpoints(yAxisLabel)
+  const hasQuadrantMeanings = xEndpoints !== null && yEndpoints !== null
+  const selectedMeaning = value
+    ? quadrantMeaning(value, xAxisLabel, yAxisLabel)
+    : null
+  const selectedPosition = value
+    ? `${value.y < 0.5 ? 'bottom' : 'top'}-${value.x < 0.5 ? 'left' : 'right'}`
+    : null
   const readableValue = value
-    ? `${text.selectedPoint}: ${xAxisLabel ?? text.horizontal} ${Math.round(value.x * 100)}%, ${yAxisLabel ?? text.vertical} ${Math.round(value.y * 100)}%`
+    ? selectedMeaning
+      ? `${text.selectedPoint}: ${selectedMeaning.horizontal}, ${selectedMeaning.vertical}; X ${Math.round(value.x * 100)}%, Y ${Math.round(value.y * 100)}%`
+      : `${text.selectedPoint}: ${xAxisLabel ?? text.horizontal} ${Math.round(value.x * 100)}%, ${yAxisLabel ?? text.vertical} ${Math.round(value.y * 100)}%`
     : text.noPoint
 
   return (
@@ -100,6 +113,7 @@ export function CoordinatePlane({
         aria-valuemax={100}
         aria-valuenow={value ? Math.round(value.x * 100) : undefined}
         aria-valuetext={readableValue}
+        aria-describedby={hasQuadrantMeanings ? quadrantDescriptionId : undefined}
         aria-disabled={disabled}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -117,12 +131,34 @@ export function CoordinatePlane({
           <path className="grid-major" d="M50 0V100 M0 50H100" />
         </svg>
         <div className="scan-band" aria-hidden="true" />
-        <div className="coordinate-scale" data-testid="coordinate-scale" aria-hidden="true">
-          <span className="coordinate-scale__marker coordinate-scale__marker--x-min">X/0%</span>
-          <span className="coordinate-scale__marker coordinate-scale__marker--x-max">X/100%</span>
-          <span className="coordinate-scale__marker coordinate-scale__marker--y-min">Y/0%</span>
-          <span className="coordinate-scale__marker coordinate-scale__marker--y-max">Y/100%</span>
-        </div>
+        {hasQuadrantMeanings ? (
+          <div className="quadrant-labels" data-testid="quadrant-labels" aria-hidden="true">
+            {([
+              ['top-left', xEndpoints.negative, yEndpoints.positive],
+              ['top-right', xEndpoints.positive, yEndpoints.positive],
+              ['bottom-left', xEndpoints.negative, yEndpoints.negative],
+              ['bottom-right', xEndpoints.positive, yEndpoints.negative],
+            ] as const).map(([position, horizontal, vertical]) => {
+              const selected = selectedPosition === position
+              return (
+                <div
+                  className={`quadrant-label quadrant-label--${position}${selected ? ' quadrant-label--selected' : ''}`}
+                  key={position}
+                >
+                  <strong>{horizontal}</strong>
+                  <span>{vertical}</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="coordinate-scale" data-testid="coordinate-scale" aria-hidden="true">
+            <span className="coordinate-scale__marker coordinate-scale__marker--x-min">X/0%</span>
+            <span className="coordinate-scale__marker coordinate-scale__marker--x-max">X/100%</span>
+            <span className="coordinate-scale__marker coordinate-scale__marker--y-min">Y/0%</span>
+            <span className="coordinate-scale__marker coordinate-scale__marker--y-max">Y/100%</span>
+          </div>
+        )}
         {point && (
           <div
             className="selected-point"
@@ -134,6 +170,14 @@ export function CoordinatePlane({
         )}
         {!value && <span className="tap-hint">{text.tapHint}</span>}
       </div>
+      {hasQuadrantMeanings && (
+        <span className="visually-hidden" id={quadrantDescriptionId}>
+          Top left: {xEndpoints.negative}, {yEndpoints.positive}. Top right:{' '}
+          {xEndpoints.positive}, {yEndpoints.positive}. Bottom left:{' '}
+          {xEndpoints.negative}, {yEndpoints.negative}. Bottom right:{' '}
+          {xEndpoints.positive}, {yEndpoints.negative}.
+        </span>
+      )}
       {/* <div className="axis-label axis-label--x">
         <span>{xAxisLabel ?? 'Horizontal scale'}</span>
         <span className="axis-arrow" aria-hidden="true">→</span>

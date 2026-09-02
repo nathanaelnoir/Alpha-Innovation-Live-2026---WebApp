@@ -11,7 +11,67 @@ import {
   setAdminSessionOpen,
   wipeAdminCollectedData,
 } from './api'
+import { encodeAxisEndpoints } from './quadrants'
 import type { AdminQuestion, AdminSession } from './types'
+
+interface EndpointFields {
+  xNegative: string
+  xPositive: string
+  yNegative: string
+  yPositive: string
+}
+
+const EMPTY_ENDPOINTS: EndpointFields = {
+  xNegative: '',
+  xPositive: '',
+  yNegative: '',
+  yPositive: '',
+}
+
+interface EndpointInputsProps {
+  language?: string
+  value: EndpointFields
+  onChange: (value: EndpointFields) => void
+  required?: boolean
+}
+
+function EndpointInputs({ language, value, onChange, required = false }: EndpointInputsProps) {
+  const prefix = language ? `${language} ` : ''
+  const update = (field: keyof EndpointFields, nextValue: string) => {
+    onChange({ ...value, [field]: nextValue })
+  }
+  const xRequired = required || Boolean(value.xNegative || value.xPositive)
+  const yRequired = required || Boolean(value.yNegative || value.yPositive)
+
+  return (
+    <>
+      <label>{prefix}X negative / left
+        <input maxLength={90} value={value.xNegative} onChange={(event) => update('xNegative', event.target.value)} required={xRequired} />
+      </label>
+      <label>{prefix}X positive / right
+        <input maxLength={90} value={value.xPositive} onChange={(event) => update('xPositive', event.target.value)} required={xRequired} />
+      </label>
+      <label>{prefix}Y negative / bottom
+        <input maxLength={90} value={value.yNegative} onChange={(event) => update('yNegative', event.target.value)} required={yRequired} />
+      </label>
+      <label>{prefix}Y positive / top
+        <input maxLength={90} value={value.yPositive} onChange={(event) => update('yPositive', event.target.value)} required={yRequired} />
+      </label>
+    </>
+  )
+}
+
+function QuadrantPreview({ endpoints }: { endpoints: EndpointFields }) {
+  if (Object.values(endpoints).some((value) => !value.trim())) return null
+  return (
+    <div className="admin-quadrant-preview" aria-label="Quadrant preview">
+      <span><strong>{endpoints.xNegative}</strong>{endpoints.yPositive}</span>
+      <span><strong>{endpoints.xPositive}</strong>{endpoints.yPositive}</span>
+      <span><strong>{endpoints.xNegative}</strong>{endpoints.yNegative}</span>
+      <span><strong>{endpoints.xPositive}</strong>{endpoints.yNegative}</span>
+    </div>
+  )
+}
 
 function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : 'The request failed. Please try again.'
@@ -29,14 +89,11 @@ export function AdminDashboard() {
   const [sessionTitle, setSessionTitle] = useState('')
   const [questionSessionId, setQuestionSessionId] = useState('')
   const [prompt, setPrompt] = useState('')
-  const [xLabel, setXLabel] = useState('')
-  const [yLabel, setYLabel] = useState('')
+  const [endpoints, setEndpoints] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptDe, setPromptDe] = useState('')
-  const [xLabelDe, setXLabelDe] = useState('')
-  const [yLabelDe, setYLabelDe] = useState('')
+  const [endpointsDe, setEndpointsDe] = useState<EndpointFields>(EMPTY_ENDPOINTS)
   const [promptIt, setPromptIt] = useState('')
-  const [xLabelIt, setXLabelIt] = useState('')
-  const [yLabelIt, setYLabelIt] = useState('')
+  const [endpointsIt, setEndpointsIt] = useState<EndpointFields>(EMPTY_ENDPOINTS)
 
   const refresh = async (organizerToken = token) => {
     const [nextSessions, nextQuestions] = await Promise.all([
@@ -90,24 +147,21 @@ export function AdminDashboard() {
       await createAdminQuestion(token, {
         session_id: questionSessionId,
         prompt,
-        x_axis_label: xLabel.trim() || null,
-        y_axis_label: yLabel.trim() || null,
+        x_axis_label: encodeAxisEndpoints(endpoints.xNegative, endpoints.xPositive),
+        y_axis_label: encodeAxisEndpoints(endpoints.yNegative, endpoints.yPositive),
         prompt_de: promptDe.trim() || null,
-        x_axis_label_de: xLabelDe.trim() || null,
-        y_axis_label_de: yLabelDe.trim() || null,
+        x_axis_label_de: encodeAxisEndpoints(endpointsDe.xNegative, endpointsDe.xPositive),
+        y_axis_label_de: encodeAxisEndpoints(endpointsDe.yNegative, endpointsDe.yPositive),
         prompt_it: promptIt.trim() || null,
-        x_axis_label_it: xLabelIt.trim() || null,
-        y_axis_label_it: yLabelIt.trim() || null,
+        x_axis_label_it: encodeAxisEndpoints(endpointsIt.xNegative, endpointsIt.xPositive),
+        y_axis_label_it: encodeAxisEndpoints(endpointsIt.yNegative, endpointsIt.yPositive),
       })
       setPrompt('')
-      setXLabel('')
-      setYLabel('')
+      setEndpoints(EMPTY_ENDPOINTS)
       setPromptDe('')
-      setXLabelDe('')
-      setYLabelDe('')
+      setEndpointsDe(EMPTY_ENDPOINTS)
       setPromptIt('')
-      setXLabelIt('')
-      setYLabelIt('')
+      setEndpointsIt(EMPTY_ENDPOINTS)
       await refresh()
     })
   }
@@ -259,20 +313,18 @@ export function AdminDashboard() {
             <fieldset className="admin-translation-group">
               <legend>English</legend>
               <label className="admin-wide">Question<input value={prompt} onChange={(event) => setPrompt(event.target.value)} required /></label>
-              <label>X-axis label<input value={xLabel} onChange={(event) => setXLabel(event.target.value)} /></label>
-              <label>Y-axis label<input value={yLabel} onChange={(event) => setYLabel(event.target.value)} /></label>
+              <EndpointInputs value={endpoints} onChange={setEndpoints} required />
+              <QuadrantPreview endpoints={endpoints} />
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>German</legend>
               <label className="admin-wide">German question<input value={promptDe} onChange={(event) => setPromptDe(event.target.value)} /></label>
-              <label>German X-axis label<input value={xLabelDe} onChange={(event) => setXLabelDe(event.target.value)} /></label>
-              <label>German Y-axis label<input value={yLabelDe} onChange={(event) => setYLabelDe(event.target.value)} /></label>
+              <EndpointInputs language="German" value={endpointsDe} onChange={setEndpointsDe} />
             </fieldset>
             <fieldset className="admin-translation-group">
               <legend>Italian</legend>
               <label className="admin-wide">Italian question<input value={promptIt} onChange={(event) => setPromptIt(event.target.value)} /></label>
-              <label>Italian X-axis label<input value={xLabelIt} onChange={(event) => setXLabelIt(event.target.value)} /></label>
-              <label>Italian Y-axis label<input value={yLabelIt} onChange={(event) => setYLabelIt(event.target.value)} /></label>
+              <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} />
             </fieldset>
             <button type="submit" disabled={busy}>Add question</button>
           </form>

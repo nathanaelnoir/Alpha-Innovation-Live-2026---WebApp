@@ -57,4 +57,34 @@ describe('CoordinatePlane', () => {
     fireEvent.keyDown(surface, { key: 'ArrowDown' })
     expect(onChange).toHaveBeenLastCalledWith({ x: 0.5, y: 0.48 })
   })
+
+  it('shows and highlights phone-friendly meanings for all four quadrants', () => {
+    const { rerender } = render(
+      <CoordinatePlane
+        value={null}
+        onChange={vi.fn()}
+        xAxisLabel="Internal processes ↔ Products and services"
+        yAxisLabel="Human-driven decisions ↔ AI-based decisions"
+      />,
+    )
+
+    const labels = within(screen.getByTestId('quadrant-labels'))
+    expect(labels.getAllByText('Internal processes')).toHaveLength(2)
+    expect(labels.getAllByText('Products and services')).toHaveLength(2)
+    expect(labels.getAllByText('AI-based decisions')).toHaveLength(2)
+    expect(labels.getAllByText('Human-driven decisions')).toHaveLength(2)
+    expect(screen.queryByTestId('coordinate-scale')).not.toBeInTheDocument()
+
+    rerender(
+      <CoordinatePlane
+        value={{ x: 0.75, y: 0.75 }}
+        onChange={vi.fn()}
+        xAxisLabel="Internal processes ↔ Products and services"
+        yAxisLabel="Human-driven decisions ↔ AI-based decisions"
+      />,
+    )
+    expect(document.querySelector('.quadrant-label--top-right')).toHaveClass(
+      'quadrant-label--selected',
+    )
+  })
 })

@@ -119,8 +119,8 @@ describe('AdminDashboard', () => {
       session_id: closedSession.id,
       position: 1,
       prompt: 'What changed?',
-      x_axis_label: 'Energy',
-      y_axis_label: null,
+      x_axis_label: 'Low energy ↔ High energy',
+      y_axis_label: 'Low focus ↔ High focus',
       prompt_de: null,
       x_axis_label_de: null,
       y_axis_label_de: null,
@@ -135,25 +135,35 @@ describe('AdminDashboard', () => {
     await screen.findByLabelText('Question')
 
     await userEvent.type(screen.getByLabelText('Question'), 'What changed?')
-    await userEvent.type(screen.getByLabelText('X-axis label'), 'Energy')
+    await userEvent.type(screen.getByLabelText('X negative / left'), 'Internal processes')
+    await userEvent.type(screen.getByLabelText('X positive / right'), 'Products and services')
+    await userEvent.type(screen.getByLabelText('Y negative / bottom'), 'Human-driven decisions')
+    await userEvent.type(screen.getByLabelText('Y positive / top'), 'AI-based decisions')
     await userEvent.type(screen.getByLabelText('German question'), 'Was hat sich verändert?')
-    await userEvent.type(screen.getByLabelText('German X-axis label'), 'Energie')
+    await userEvent.type(screen.getByLabelText('German X negative / left'), 'Interne Prozesse')
+    await userEvent.type(screen.getByLabelText('German X positive / right'), 'Produkte und Dienste')
+    await userEvent.type(screen.getByLabelText('German Y negative / bottom'), 'Menschlich entschieden')
+    await userEvent.type(screen.getByLabelText('German Y positive / top'), 'KI-basiert entschieden')
     await userEvent.type(screen.getByLabelText('Italian question'), 'Che cosa è cambiato?')
-    await userEvent.type(screen.getByLabelText('Italian X-axis label'), 'Energia')
+    await userEvent.type(screen.getByLabelText('Italian X negative / left'), 'Processi interni')
+    await userEvent.type(screen.getByLabelText('Italian X positive / right'), 'Prodotti e servizi')
+    await userEvent.type(screen.getByLabelText('Italian Y negative / bottom'), 'Decisioni umane')
+    await userEvent.type(screen.getByLabelText('Italian Y positive / top'), 'Decisioni basate su IA')
+    expect(screen.getByLabelText('Quadrant preview')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Add question' }))
 
     await waitFor(() => {
       expect(createAdminQuestion).toHaveBeenCalledWith('organizer-secret', {
         session_id: closedSession.id,
         prompt: 'What changed?',
-        x_axis_label: 'Energy',
-        y_axis_label: null,
+        x_axis_label: 'Internal processes ↔ Products and services',
+        y_axis_label: 'Human-driven decisions ↔ AI-based decisions',
         prompt_de: 'Was hat sich verändert?',
-        x_axis_label_de: 'Energie',
-        y_axis_label_de: null,
+        x_axis_label_de: 'Interne Prozesse ↔ Produkte und Dienste',
+        y_axis_label_de: 'Menschlich entschieden ↔ KI-basiert entschieden',
         prompt_it: 'Che cosa è cambiato?',
-        x_axis_label_it: 'Energia',
-        y_axis_label_it: null,
+        x_axis_label_it: 'Processi interni ↔ Prodotti e servizi',
+        y_axis_label_it: 'Decisioni umane ↔ Decisioni basate su IA',
       })
     })
     expect(createAdminSession).not.toHaveBeenCalled()

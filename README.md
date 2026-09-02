@@ -94,6 +94,14 @@ the API continues to store normalized coordinates. The conversion is
 `display_x = 2 * x - 1` and `display_y = 2 * y - 1`; therefore normalized
 `(0.5, 0.5)` is the visual origin.
 
+Organizers define the negative and positive meaning of each axis separately in
+the question form. The frontend combines those endpoints into four quadrant
+captions, highlights the quadrant containing the selected point, and keeps the
+exact normalized coordinates for submission. Axis endpoints are encoded in the
+existing label fields with ` ↔ `, so this behavior requires no database schema
+change. Questions with older single-value axis labels retain the legacy scale
+display.
+
 The graph is rendered responsively and can be a different pixel size on each
 device. Pointer coordinates are calculated against the graph's current bounding
 rectangle and immediately normalized to `[0, 1]`; bottom-left is `(0, 0)` and
