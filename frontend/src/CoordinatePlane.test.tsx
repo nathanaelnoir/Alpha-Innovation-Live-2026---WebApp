@@ -69,9 +69,6 @@ describe('CoordinatePlane', () => {
     )
 
     const labels = within(screen.getByTestId('quadrant-labels'))
-    expect(
-      screen.getByText('Move the sliders or choose a position directly in the coordinate system.'),
-    ).toBeInTheDocument()
     expect(labels.getAllByText('Internal processes')).toHaveLength(2)
     expect(labels.getAllByText('Products and services')).toHaveLength(2)
     expect(labels.getAllByText('AI-based decisions')).toHaveLength(2)

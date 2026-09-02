@@ -320,6 +320,9 @@ describe('App', () => {
     expect(horizontal).toHaveTextContent('Products and services')
     expect(vertical).toHaveTextContent('Human-driven decisions')
     expect(vertical).toHaveTextContent('AI-based decisions')
+    expect(
+      screen.getByText('Move the sliders or choose a position directly in the coordinate system.'),
+    ).toBeInTheDocument()
     expect(horizontal.querySelector('.balance-meter__marker')).not.toBeInTheDocument()
 
     vi.spyOn(horizontal, 'getBoundingClientRect').mockReturnValue({

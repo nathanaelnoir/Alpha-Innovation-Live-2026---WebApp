@@ -461,6 +461,10 @@ export default function App() {
               {/* <p className="instruction">TAP OR DRAG ON THE FIELD · ADJUST BEFORE TRANSMISSION</p> */}
             </div>
 
+            {xEndpoints && yEndpoints && !isSliderOnly && (
+              <p className="response-choice-hint">{text.coordinatePlane.choiceHint}</p>
+            )}
+
             <div
               className={`position-readout${xEndpoints && yEndpoints ? ' position-readout--balance' : ''}${isSliderOnly ? ' position-readout--slider-only' : ''}${coordinate ? ' position-readout--active' : ''}`}
               aria-live="polite"
