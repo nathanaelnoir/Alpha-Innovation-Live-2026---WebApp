@@ -274,7 +274,7 @@ h1 {
 
 .quadrant-labels { position: absolute; z-index: 3; inset: 0; display: grid; grid-template: repeat(2, 1fr) / repeat(2, 1fr); pointer-events: none; }
 .quadrant-label { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 14px 10px; color: var(--white); text-align: center; text-transform: uppercase; transition: color 120ms linear, background 120ms linear; }
-.quadrant-label strong, .quadrant-label span { display: block; max-width: 100%; overflow-wrap: anywhere; font-size: clamp(.55rem, 1.7vw, .72rem); line-height: 1.25; letter-spacing: .07em; }
+.quadrant-label strong, .quadrant-label span { display: block; max-width: 100%; overflow-wrap: anywhere; font-size: clamp(.55rem, 1.7vw, .72rem); font-weight: 700; line-height: 1.25; letter-spacing: .07em; }
 .quadrant-label--selected { color: var(--white); background: rgba(54,91,216,.16); box-shadow: inset 0 0 28px rgba(54,91,216,.08); }
 
 .scan-band {
