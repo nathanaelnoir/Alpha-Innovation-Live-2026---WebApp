@@ -62,14 +62,20 @@ export function displayPrompt(prompt) {
 }
 
 export function selectPresentationSlides(datasets) {
+  if (datasets.length < 3) return null;
+  const sliderSlide = datasets.find((dataset) => dataset.sliderDescriptions) ?? datasets.at(-1);
+  const remainingSlides = datasets.filter((dataset) => dataset !== sliderSlide);
   const coordinateSlides = [];
   const coordinateSessionIds = new Set();
-  datasets.forEach((dataset) => {
-    if (dataset.sliderDescriptions || coordinateSessionIds.has(dataset.sessionId)) return;
+  remainingSlides.forEach((dataset) => {
+    if (coordinateSessionIds.has(dataset.sessionId)) return;
     coordinateSessionIds.add(dataset.sessionId);
     coordinateSlides.push(dataset);
   });
-  const sliderSlide = datasets.find((dataset) => dataset.sliderDescriptions);
-  if (coordinateSlides.length < 2 || !sliderSlide) return null;
+  remainingSlides.forEach((dataset) => {
+    if (coordinateSlides.length >= 2 || coordinateSlides.includes(dataset)) return;
+    coordinateSlides.push(dataset);
+  });
+  if (coordinateSlides.length < 2) return null;
   return [coordinateSlides[0], coordinateSlides[1], sliderSlide];
 }

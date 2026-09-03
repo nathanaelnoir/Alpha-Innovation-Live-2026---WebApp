@@ -47,7 +47,10 @@ test("selects two coordinate slides followed by one slider-only slide", () => {
     selectPresentationSlides([firstCoordinate, extraFirstSessionQuestion, slider, secondCoordinate]),
     [firstCoordinate, secondCoordinate, slider],
   );
-  assert.equal(selectPresentationSlides([firstCoordinate, extraFirstSessionQuestion, slider]), null);
+  assert.deepEqual(
+    selectPresentationSlides([firstCoordinate, extraFirstSessionQuestion, slider]),
+    [firstCoordinate, extraFirstSessionQuestion, slider],
+  );
 });
 
 test("does not require responses when selecting stored slides", () => {
@@ -60,4 +63,13 @@ test("does not require responses when selecting stored slides", () => {
     secondCoordinate,
     slider,
   ]);
+});
+
+test("falls back to stored order when session or slider metadata is unavailable", () => {
+  const first = { id: "first", sessionId: null, sliderDescriptions: null };
+  const second = { id: "second", sessionId: null, sliderDescriptions: null };
+  const third = { id: "third", sessionId: null, sliderDescriptions: null };
+
+  assert.deepEqual(selectPresentationSlides([first, second, third]), [first, second, third]);
+  assert.equal(selectPresentationSlides([first, second]), null);
 });

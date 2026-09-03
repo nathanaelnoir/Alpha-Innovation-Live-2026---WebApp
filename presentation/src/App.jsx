@@ -166,7 +166,10 @@ function validateDataset(raw) {
 function presentationToDatasets(presentation) {
   if (!presentation || !Array.isArray(presentation.questions)) return [];
   return presentation.questions.map((question) => {
-    const sliderContent = parseSliderOnlyPrompt(question.prompt);
+    const sliderContent = [question.prompt, question.prompt_de, question.prompt_it]
+      .filter(Boolean)
+      .map(parseSliderOnlyPrompt)
+      .find(Boolean) ?? null;
     return {
       id: question.id,
       position: question.position,
@@ -1311,7 +1314,7 @@ export default function App() {
       await audioWarmup;
       const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
       const slides = selectPresentationSlides(datasets);
-      if (!slides) throw new Error("Could not identify Session 1, Session 2, and the slider-only question in the stored presentation data.");
+      if (!slides) throw new Error(`The presentation API returned only ${datasets.length} stored question${datasets.length === 1 ? "" : "s"}; three are required.`);
       setPresentation({ title: "All sessions", datasets: slides });
       setToken("");
     } catch (connectionError) {
