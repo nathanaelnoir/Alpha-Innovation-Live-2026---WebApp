@@ -5,7 +5,6 @@ import { evaluate, getAudioContext, getSuperdoughAudioController, hush, initAudi
 import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt, selectPresentationSlides } from "./questionContent.js";
 
 const TARGET_SECONDS = 16.5;
-const MIN_POINTS = 1;
 const MAX_POINTS = 150;
 const LOOKAHEAD = 0.16;
 const FIRST_RUN_LOOKAHEAD = 0.45;
@@ -184,6 +183,7 @@ function presentationToDatasets(presentation) {
         y: parseAxisEndpoints(question.y_axis_label),
       },
       sliderDescriptions: sliderContent?.sliders ?? null,
+      sessionId: presentation.id,
       sessionTitle: presentation.title,
       points: question.points.map((point) => ({
         x: Number(point.x) * 2 - 1,
@@ -274,7 +274,7 @@ function buildForwardComposition(run, movementIndex) {
   const variation = variations[movementIndex % variations.length];
   const compositionCpm = variation.cpm * AUDIO_TEMPO_SCALE;
   const forwardCycles = run.duration * compositionCpm / 60;
-  const dataNotes = run.events.map((_, index) => index === 0 || index === run.events.length - 1 ? "a5" : variation.data).join(" ");
+  const dataNotes = run.events.map((_, index) => index === 0 || index === run.events.length - 1 ? "a5" : variation.data).join(" ") || "~";
 
   return `
 // @version 1.0
@@ -1026,10 +1026,6 @@ function SessionApp({ initialSource, sessionTitle }) {
     prefetchedRef.current.delete(index);
     const candidate = validateDataset(raw);
     if (!candidate) return null;
-    if (candidate.points.length < MIN_POINTS) {
-      setMessage(`Skipped “${candidate.question || "Untitled"}”: only ${candidate.points.length} usable points.`);
-      return null;
-    }
     setMessage(candidate.dropped ? `${candidate.dropped} invalid point${candidate.dropped === 1 ? " was" : "s were"} dropped.` : "");
     return candidate;
   }, [source]);
@@ -1312,9 +1308,8 @@ export default function App() {
       const payload = await fetchPresentations(token.trim());
       await audioWarmup;
       const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
-      const usable = datasets.filter((dataset) => dataset.points.length >= MIN_POINTS);
-      const slides = selectPresentationSlides(usable);
-      if (!slides) throw new Error("The presentation requires two coordinate questions and one slider-only question with responses.");
+      const slides = selectPresentationSlides(datasets);
+      if (!slides) throw new Error("Could not identify Session 1, Session 2, and the slider-only question in the stored presentation data.");
       setPresentation({ title: "All sessions", datasets: slides });
       setToken("");
     } catch (connectionError) {
