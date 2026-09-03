@@ -527,7 +527,7 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
         : 1;
       const reveal = reducedMotion ? 1 : 1 - Math.pow(1 - revealRaw, 3);
       const introAlpha = state === "opening" ? reveal : 1;
-      const axisAlpha = state === "closing" ? 0.08 : state === "cleared" ? 0.12 : 0.32;
+      const axisAlpha = state === "cleared" ? 0.12 : 0.32;
 
       // The reference uses one uninterrupted drafting grid behind a centered,
       // nearly-square coordinate field. Keeping the outer grid visible makes
@@ -1195,7 +1195,6 @@ function SessionApp({ initialSource, sessionTitle }) {
       } else if (current === "complete") {
         if (datasetIndex >= source.length - 1) {
           stopPlayback();
-          setState("closing");
           return;
         }
         stopPlayback();
@@ -1214,15 +1213,7 @@ function SessionApp({ initialSource, sessionTitle }) {
         setRunMeta(null);
         setState("question-transition");
         await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 0 : NEXT_QUESTION_BLEND_MS));
-        await beginRun(next, nextIndex, false);
-      } else if (current === "closing") {
-        const first = await loadDataset(0);
-        if (first) {
-          setDatasetIndex(0);
-          setDataset(first);
-          setSessionStarted(false);
-          setState("question");
-        }
+        setState("question");
       }
     } finally {
       transitionBusyRef.current = false;
@@ -1278,25 +1269,23 @@ function SessionApp({ initialSource, sessionTitle }) {
   };
 
   const actionLabel = state === "question"
-    ? (sessionStarted ? `Start question ${String(datasetIndex + 1).padStart(2, "0")}` : "Start presentation")
+    ? (sessionStarted ? `Start slide ${String(datasetIndex + 1).padStart(2, "0")}` : "Start presentation")
     : state === "complete"
-      ? (datasetIndex === source.length - 1 ? "Finish presentation" : "Start next slide")
-      : state === "closing"
-          ? "Restart presentation"
-          : "";
+      ? (datasetIndex === source.length - 1 ? "" : "Next slide")
+      : "";
 
   return <main className={`app state-${state}`}>
     <style>{CSS}</style>
     <div className="wash" />
-    <header className="brand"><span className="brand-mark" /> ALPHA INNOVATION LIVE 2026 <span className="counter">{state !== "closing" && `${String(datasetIndex + 1).padStart(2, "0")} / ${String(source.length).padStart(2, "0")}`}</span></header>
+    <header className="brand"><span className="brand-mark" /> ALPHA INNOVATION LIVE 2026 <span className="counter">{`${String(datasetIndex + 1).padStart(2, "0")} / ${String(source.length).padStart(2, "0")}`}</span></header>
     <section className="stage">
-      {state === "closing" ? <div className="closing"><p>Every point was present.</p><h1>Thank you for listening.</h1></div> : <>
+      <>
         <div className="question-wrap">
           <p className="eyebrow">{dataset.sessionTitle ?? sessionTitle} – Question {String(dataset.position ?? datasetIndex + 1).padStart(2, "0")}</p>
           <h1>{getQuestionTranslations(dataset).map(([language, question]) => <span className="translation" key={language}><b>{language}</b><span>{question}</span></span>)}</h1>
         </div>
         <Plot dataset={dataset} state={state} visualRef={visualRef} clearStartedAt={clearStartedAt} coordinateRevealStartedAt={coordinateRevealStartedAt} reducedMotion={reducedMotion} />
-      </>}
+      </>
     </section>
     {actionLabel && <footer>
       <span className="status">{message || "Manual presentation control"}</span>
@@ -1421,10 +1410,10 @@ const CSS = String.raw`
   .counter { margin-left: auto; color: #858585; }
   .stage { height: 100vh; position: relative; display: grid; place-items: center; }
   .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 495ms linear, opacity 264ms linear; }
-  .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
+  .question-wrap h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
   .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: 1em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
-  .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
+  .eyebrow { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
   .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 52px); transform: translateY(-50%); }
   .state-opening .question-wrap { animation: side-question-in 770ms ease-out both; }
@@ -1447,8 +1436,6 @@ const CSS = String.raw`
   }
   .state-cleared .question-wrap { opacity: 0; }
   .state-cleared .plot { opacity: .6; }
-  .closing { width: min(860px, 82vw); text-align: left; }
-  .closing h1 { font-size: clamp(34px, 5vw, 72px); }
   footer { position: absolute; z-index: 6; left: 22px; right: 22px; bottom: 18px; min-height: 28px; display: flex; align-items: center; border-top: 1px solid #222; padding-top: 8px; }
   .status { color: #777; font: 300 8px "DM Mono", monospace; letter-spacing: .07em; text-transform: uppercase; }
   .presentation-action { margin-left: auto; display: flex; align-items: center; gap: 12px; border: 0; padding: 0; background: transparent; color: #fff; cursor: pointer; font: 500 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
@@ -1471,7 +1458,7 @@ const CSS = String.raw`
     .setup { right: 14px; }
     .plot { width: 100vw; height: 100vh; }
     footer { left: 14px; right: 14px; }
-    .question-wrap, .closing { width: 88vw; }
+    .question-wrap { width: 88vw; }
     .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 14px; width: 42vw; transform: translateY(-50%); }
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }

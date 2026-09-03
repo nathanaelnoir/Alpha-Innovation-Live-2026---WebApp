@@ -199,8 +199,10 @@ slider-only questions are shown as readable question text; their slider titles
 label the corresponding visualization axes while their explanatory subtitles
 are omitted. Encoded axis endpoints are placed at the corresponding sides of
 the visualization. A completed slide remains on screen until the presenter
-uses the on-screen action button or Space key; that single action transitions to
-and starts the next slide.
+uses the on-screen action button or Space key. That action reveals the next
+slide without starting its points or audio; a second action starts the revealed
+slide. The final slide remains visible after completion and has no separate
+closing or thank-you screen.
 
 ### Backend setup
 
