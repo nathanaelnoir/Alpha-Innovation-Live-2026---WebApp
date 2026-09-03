@@ -156,7 +156,6 @@ function validateDataset(raw) {
       y: parseAxisEndpoints(raw.axisLabels?.y),
     },
     sliderDescriptions: raw.sliderDescriptions ?? null,
-    sessionId: raw.sessionId ?? null,
     sessionTitle: raw.sessionTitle ?? null,
     points,
     dropped,
@@ -185,7 +184,6 @@ function presentationToDatasets(presentation) {
         y: parseAxisEndpoints(question.y_axis_label),
       },
       sliderDescriptions: sliderContent?.sliders ?? null,
-      sessionId: presentation.id,
       sessionTitle: presentation.title,
       points: question.points.map((point) => ({
         x: Number(point.x) * 2 - 1,
@@ -1316,7 +1314,7 @@ export default function App() {
       const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
       const usable = datasets.filter((dataset) => dataset.points.length >= MIN_POINTS);
       const slides = selectPresentationSlides(usable);
-      if (!slides) throw new Error("The presentation requires two coordinate sessions and one slider-only session with responses.");
+      if (!slides) throw new Error("The presentation requires two coordinate questions and one slider-only question with responses.");
       setPresentation({ title: "All sessions", datasets: slides });
       setToken("");
     } catch (connectionError) {

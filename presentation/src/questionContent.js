@@ -62,13 +62,7 @@ export function displayPrompt(prompt) {
 }
 
 export function selectPresentationSlides(datasets) {
-  const coordinateSlides = [];
-  const coordinateSessionIds = new Set();
-  datasets.forEach((dataset) => {
-    if (dataset.sliderDescriptions || coordinateSessionIds.has(dataset.sessionId)) return;
-    coordinateSessionIds.add(dataset.sessionId);
-    coordinateSlides.push(dataset);
-  });
+  const coordinateSlides = datasets.filter((dataset) => !dataset.sliderDescriptions);
   const sliderSlide = datasets.find((dataset) => dataset.sliderDescriptions);
   if (coordinateSlides.length < 2 || !sliderSlide) return null;
   return [coordinateSlides[0], coordinateSlides[1], sliderSlide];

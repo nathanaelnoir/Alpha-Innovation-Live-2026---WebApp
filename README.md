@@ -189,14 +189,15 @@ next attempt to submit.
 Open the presentation service and enter `RESULTS_EXPORT_TOKEN` as the master
 keyword. The keyword is sent only to the protected backend endpoint and is not
 stored by the page or included in the static frontend build. The presentation
-uses exactly three datasets with stored responses: the first coordinate question
-from each of the first two sessions, followed by the first slider-only question.
-Sessions may remain closed; opening them is only necessary when participants
-should be allowed to answer. Encoded slider-only questions are shown as readable
-question text with their two slider descriptions, and encoded axis endpoints are
-placed at the corresponding sides of the visualization. A completed slide
-remains on screen until the presenter uses the on-screen action button or Space
-key; that single action transitions to and starts the next slide.
+uses exactly three datasets with stored responses: the first two coordinate
+questions in stored session/question order, followed by the first slider-only
+question. These questions may belong to the same database session. Sessions may
+remain closed; opening them is only necessary when participants should be
+allowed to answer. Encoded slider-only questions are shown as readable question
+text with their two slider descriptions, and encoded axis endpoints are placed
+at the corresponding sides of the visualization. A completed slide remains on
+screen until the presenter uses the on-screen action button or Space key; that
+single action transitions to and starts the next slide.
 
 ### Backend setup
 

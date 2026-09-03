@@ -38,14 +38,14 @@ test("leaves malformed encoded prompts untouched", () => {
 });
 
 test("selects two coordinate slides followed by one slider-only slide", () => {
-  const firstCoordinate = { id: "first", sessionId: "session-1", sliderDescriptions: null };
-  const extraFirstSessionQuestion = { id: "extra", sessionId: "session-1", sliderDescriptions: null };
-  const slider = { id: "slider", sessionId: "session-3", sliderDescriptions: [{ title: "One" }] };
-  const secondCoordinate = { id: "second", sessionId: "session-2", sliderDescriptions: null };
+  const firstCoordinate = { id: "first", sliderDescriptions: null };
+  const slider = { id: "slider", sliderDescriptions: [{ title: "One" }] };
+  const secondCoordinate = { id: "second", sliderDescriptions: null };
+  const extraCoordinate = { id: "extra", sliderDescriptions: null };
 
   assert.deepEqual(
-    selectPresentationSlides([firstCoordinate, extraFirstSessionQuestion, slider, secondCoordinate]),
+    selectPresentationSlides([firstCoordinate, slider, secondCoordinate, extraCoordinate]),
     [firstCoordinate, secondCoordinate, slider],
   );
-  assert.equal(selectPresentationSlides([firstCoordinate, extraFirstSessionQuestion, slider]), null);
+  assert.equal(selectPresentationSlides([firstCoordinate, secondCoordinate]), null);
 });
