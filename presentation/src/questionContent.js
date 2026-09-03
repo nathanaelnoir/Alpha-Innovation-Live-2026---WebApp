@@ -60,3 +60,10 @@ export function parseSliderOnlyPrompt(prompt) {
 export function displayPrompt(prompt) {
   return parseSliderOnlyPrompt(prompt)?.question ?? prompt;
 }
+
+export function selectPresentationSlides(datasets) {
+  const coordinateSlides = datasets.filter((dataset) => !dataset.sliderDescriptions);
+  const sliderSlide = datasets.find((dataset) => dataset.sliderDescriptions);
+  if (coordinateSlides.length < 2 || !sliderSlide) return null;
+  return [coordinateSlides[0], coordinateSlides[1], sliderSlide];
+}

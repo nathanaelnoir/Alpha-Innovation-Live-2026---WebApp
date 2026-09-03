@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as Tone from "tone";
 import * as THREE from "three";
 import { evaluate, getAudioContext, getSuperdoughAudioController, hush, initAudio, initStrudel } from "@strudel/web";
-import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt } from "./questionContent.js";
+import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt, selectPresentationSlides } from "./questionContent.js";
 
 const TARGET_SECONDS = 16.5;
 const MIN_POINTS = 1;
@@ -12,7 +12,6 @@ const FIRST_RUN_LOOKAHEAD = 0.45;
 const AUDIO_WARMUP_MS = 300;
 const COORDINATE_REVEAL_MS = 1320;
 const DATA_CLEAR_MS = 1100;
-const BETWEEN_HOLD_MS = 275;
 const NEXT_QUESTION_BLEND_MS = 1320;
 const FINAL_RELEASE_SECONDS = 0.06;
 const AUDIO_TEMPO_SCALE = 0.92;
@@ -1035,9 +1034,9 @@ function SessionApp({ initialSource, sessionTitle }) {
     return candidate;
   }, [source]);
 
-  const beginRun = useCallback(async () => {
-    if (!dataset || stateRef.current !== "question") return;
-    const run = prepareRun(dataset, targetSeconds);
+  const beginRun = useCallback(async (selectedDataset = dataset, selectedIndex = datasetIndex, requireQuestionState = true) => {
+    if (!selectedDataset || (requireQuestionState && stateRef.current !== "question")) return;
+    const run = prepareRun(selectedDataset, targetSeconds);
     const startDelay = playbackStartedRef.current ? LOOKAHEAD : FIRST_RUN_LOOKAHEAD;
     let strudelContext;
     let masterGain;
@@ -1084,13 +1083,13 @@ function SessionApp({ initialSource, sessionTitle }) {
 
     clearSchedule();
     visualRef.current = { points: [], trail: [], mean: null, runDuration: run.duration };
-    setRunMeta({ regime: run.regime, count: run.events.length, duration: targetSeconds, engine: `A-linked movement ${String(datasetIndex + 1).padStart(2, "0")}` });
+    setRunMeta({ regime: run.regime, count: run.events.length, duration: targetSeconds, engine: `A-linked movement ${String(selectedIndex + 1).padStart(2, "0")}` });
     setSessionStarted(true);
 
     try {
       // Start the composition muted. It is revealed at the same lookahead used
       // for the first scheduled point, after every dependency is ready.
-      await evaluate(`${STRUDEL_BACKGROUND}\n${buildForwardComposition(run, datasetIndex)}`);
+      await evaluate(`${STRUDEL_BACKGROUND}\n${buildForwardComposition(run, selectedIndex)}`);
       const audioNow = strudelContext.currentTime;
       masterGain.cancelScheduledValues(audioNow);
       masterGain.setValueAtTime(0, audioNow);
@@ -1150,66 +1149,18 @@ function SessionApp({ initialSource, sessionTitle }) {
         } catch {
           hush();
         }
-        if (datasetIndex >= source.length - 1) {
-          setState("complete");
-          return;
-        }
-        setClearStartedAt(performance.now());
-        setState("transforming");
-        window.setTimeout(() => {
-          visualRef.current = { points: [], trail: [], mean: null, runDuration: null };
-          setState("between");
-        }, reducedMotion ? 0 : DATA_CLEAR_MS);
+        setState("complete");
       }, time);
     }, startAt + lastPointTime);
     eventIdsRef.current.push(completeId);
     transport.start();
     playbackStartedRef.current = true;
 
-    const next = datasetIndex + 1;
+    const next = selectedIndex + 1;
     if (next < source.length && !prefetchedRef.current.has(next)) {
       fakeFetchDataset(next, source).then((value) => prefetchedRef.current.set(next, value));
     }
-  }, [clearSchedule, dataset, datasetIndex, reducedMotion, source, targetSeconds]);
-
-  const advanceFromCleared = useCallback(async (blendFromVisual = false) => {
-    if (datasetIndex >= source.length - 1) {
-      setState("finished");
-      return;
-    }
-    let nextIndex = datasetIndex + 1;
-    let next = null;
-    if (!blendFromVisual) {
-      setDataset(null);
-      setMessage("Loading next question…");
-      setState("question");
-    }
-    while (nextIndex < source.length && !next) {
-      next = await loadDataset(nextIndex);
-      if (!next) nextIndex += 1;
-    }
-    if (!next) {
-      setState("finished");
-      return;
-    }
-    setDatasetIndex(nextIndex);
-    setDataset(next);
-    setRunMeta(null);
-    setState(blendFromVisual ? "question-transition" : "question");
-    visualRef.current = { points: [], trail: [], mean: null, playhead: null };
-  }, [datasetIndex, loadDataset, source.length]);
-
-  useEffect(() => {
-    if (state !== "question-transition") return undefined;
-    const timer = window.setTimeout(() => setState("question"), NEXT_QUESTION_BLEND_MS);
-    return () => window.clearTimeout(timer);
-  }, [state]);
-
-  useEffect(() => {
-    if (state !== "between") return undefined;
-    const timer = window.setTimeout(() => void advanceFromCleared(true), reducedMotion ? 0 : BETWEEN_HOLD_MS);
-    return () => window.clearTimeout(timer);
-  }, [advanceFromCleared, reducedMotion, state]);
+  }, [clearSchedule, dataset, datasetIndex, source, targetSeconds]);
 
   const handleAdvance = useCallback(async () => {
     if (transitionBusyRef.current) return;
@@ -1228,12 +1179,21 @@ function SessionApp({ initialSource, sessionTitle }) {
         }
         stopPlayback();
         setClearStartedAt(performance.now());
-        setState("cleared");
-        window.setTimeout(() => {
-          visualRef.current = { points: [], trail: [], mean: null, runDuration: null };
-        }, reducedMotion ? 0 : 1000);
-      } else if (current === "cleared") {
-        await advanceFromCleared();
+        setState("transforming");
+        await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 0 : DATA_CLEAR_MS));
+        visualRef.current = { points: [], trail: [], mean: null, runDuration: null };
+        const nextIndex = datasetIndex + 1;
+        const next = await loadDataset(nextIndex);
+        if (!next) {
+          setState("complete");
+          return;
+        }
+        setDatasetIndex(nextIndex);
+        setDataset(next);
+        setRunMeta(null);
+        setState("question-transition");
+        await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 0 : NEXT_QUESTION_BLEND_MS));
+        await beginRun(next, nextIndex, false);
       } else if (current === "closing") {
         const first = await loadDataset(0);
         if (first) {
@@ -1247,7 +1207,7 @@ function SessionApp({ initialSource, sessionTitle }) {
       transitionBusyRef.current = false;
       setActionPending(false);
     }
-  }, [advanceFromCleared, beginRun, datasetIndex, loadDataset, reducedMotion, source.length, stopPlayback]);
+  }, [beginRun, datasetIndex, loadDataset, reducedMotion, source.length, stopPlayback]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -1299,10 +1259,8 @@ function SessionApp({ initialSource, sessionTitle }) {
   const actionLabel = state === "question"
     ? (sessionStarted ? `Start question ${String(datasetIndex + 1).padStart(2, "0")}` : "Start presentation")
     : state === "complete"
-      ? (datasetIndex === source.length - 1 ? "Finish presentation" : "Next question")
-      : state === "cleared"
-        ? "Show next question"
-        : state === "closing"
+      ? (datasetIndex === source.length - 1 ? "Finish presentation" : "Start next slide")
+      : state === "closing"
           ? "Restart presentation"
           : "";
 
@@ -1355,8 +1313,9 @@ export default function App() {
       await audioWarmup;
       const datasets = payload.flatMap(presentationToDatasets).map(validateDataset).filter(Boolean);
       const usable = datasets.filter((dataset) => dataset.points.length >= MIN_POINTS);
-      if (!usable.length) throw new Error(`No session has a question with at least ${MIN_POINTS} responses.`);
-      setPresentation({ title: "All sessions", datasets: usable });
+      const slides = selectPresentationSlides(usable);
+      if (!slides) throw new Error("The presentation requires two coordinate sessions and one slider-only session with responses.");
+      setPresentation({ title: "All sessions", datasets: slides });
       setToken("");
     } catch (connectionError) {
       setError(connectionError.message);

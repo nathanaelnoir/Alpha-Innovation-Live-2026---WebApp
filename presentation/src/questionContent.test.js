@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt } from "./questionContent.js";
+import {
+  displayPrompt,
+  parseAxisEndpoints,
+  parseSliderOnlyPrompt,
+  selectPresentationSlides,
+} from "./questionContent.js";
 
 test("parses encoded axis endpoints", () => {
   assert.deepEqual(parseAxisEndpoints("Less ↔ More"), {
@@ -30,4 +35,17 @@ test("leaves malformed encoded prompts untouched", () => {
   const malformed = "[[slider-only:v3]]not-json";
   assert.equal(displayPrompt(malformed), malformed);
   assert.equal(parseSliderOnlyPrompt(malformed), null);
+});
+
+test("selects two coordinate slides followed by one slider-only slide", () => {
+  const firstCoordinate = { id: "session-1", sliderDescriptions: null };
+  const slider = { id: "slider", sliderDescriptions: [{ title: "One" }] };
+  const secondCoordinate = { id: "session-2", sliderDescriptions: null };
+  const extraCoordinate = { id: "extra", sliderDescriptions: null };
+
+  assert.deepEqual(
+    selectPresentationSlides([firstCoordinate, slider, secondCoordinate, extraCoordinate]),
+    [firstCoordinate, secondCoordinate, slider],
+  );
+  assert.equal(selectPresentationSlides([firstCoordinate, secondCoordinate]), null);
 });
