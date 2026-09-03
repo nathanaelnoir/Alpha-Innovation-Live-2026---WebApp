@@ -171,21 +171,34 @@ export function wipeAdminCollectedData(
 
 export function createAdminQuestion(
   token: string,
-  question: {
-    session_id: string
-    prompt: string
-    x_axis_label: string | null
-    y_axis_label: string | null
-    prompt_de: string | null
-    x_axis_label_de: string | null
-    y_axis_label_de: string | null
-    prompt_it: string | null
-    x_axis_label_it: string | null
-    y_axis_label_it: string | null
-  },
+  question: AdminQuestionWrite & { session_id: string },
 ): Promise<AdminQuestion> {
   return request<AdminQuestion>('/api/v1/questions', {
     method: 'POST',
+    headers: organizerHeaders(token, true),
+    body: JSON.stringify(question),
+  })
+}
+
+export interface AdminQuestionWrite {
+  prompt: string
+  x_axis_label: string | null
+  y_axis_label: string | null
+  prompt_de: string | null
+  x_axis_label_de: string | null
+  y_axis_label_de: string | null
+  prompt_it: string | null
+  x_axis_label_it: string | null
+  y_axis_label_it: string | null
+}
+
+export function updateAdminQuestion(
+  token: string,
+  questionId: string,
+  question: AdminQuestionWrite,
+): Promise<AdminQuestion> {
+  return request<AdminQuestion>(`/api/v1/questions/${questionId}`, {
+    method: 'PUT',
     headers: organizerHeaders(token, true),
     body: JSON.stringify(question),
   })

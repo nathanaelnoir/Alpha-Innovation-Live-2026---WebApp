@@ -9,12 +9,14 @@ import {
   listAdminQuestions,
   listAdminSessions,
   setAdminSessionOpen,
+  updateAdminQuestion,
   wipeAdminCollectedData,
 } from './api'
-import { encodeAxisEndpoints } from './quadrants'
+import { encodeAxisEndpoints, parseAxisEndpoints } from './quadrants'
 import {
   displayPrompt,
   encodeSliderOnlyPrompt,
+  parseSliderOnlyPrompt,
   SLIDER_ONLY_QUESTION_MAX_LENGTH,
   SLIDER_ONLY_SUBTITLE_MAX_LENGTH,
   SLIDER_ONLY_TITLE_MAX_LENGTH,
@@ -33,6 +35,17 @@ const EMPTY_ENDPOINTS: EndpointFields = {
   xPositive: '',
   yNegative: '',
   yPositive: '',
+}
+
+function endpointFields(xLabel: string | null, yLabel: string | null): EndpointFields {
+  const x = parseAxisEndpoints(xLabel)
+  const y = parseAxisEndpoints(yLabel)
+  return {
+    xNegative: x?.negative ?? xLabel ?? '',
+    xPositive: x?.positive ?? '',
+    yNegative: y?.negative ?? yLabel ?? '',
+    yPositive: y?.positive ?? '',
+  }
 }
 
 interface EndpointInputsProps {
@@ -105,6 +118,7 @@ export function AdminDashboard() {
   const [wipeConfirmation, setWipeConfirmation] = useState('')
   const [sessionTitle, setSessionTitle] = useState('')
   const [questionSessionId, setQuestionSessionId] = useState('')
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
   const [sliderOnly, setSliderOnly] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [sliderTitle, setSliderTitle] = useState('')
@@ -171,11 +185,61 @@ export function AdminDashboard() {
     })
   }
 
-  const handleCreateQuestion = (event: FormEvent) => {
+  const resetQuestionForm = () => {
+    setEditingQuestionId(null)
+    setPrompt('')
+    setSliderTitle('')
+    setSubtitle('')
+    setSecondSliderTitle('')
+    setSecondSubtitle('')
+    setEndpoints(EMPTY_ENDPOINTS)
+    setPromptDe('')
+    setSliderTitleDe('')
+    setSubtitleDe('')
+    setSecondSliderTitleDe('')
+    setSecondSubtitleDe('')
+    setEndpointsDe(EMPTY_ENDPOINTS)
+    setPromptIt('')
+    setSliderTitleIt('')
+    setSubtitleIt('')
+    setSecondSliderTitleIt('')
+    setSecondSubtitleIt('')
+    setEndpointsIt(EMPTY_ENDPOINTS)
+    setSliderOnly(false)
+  }
+
+  const startEditingQuestion = (question: AdminQuestion) => {
+    const english = parseSliderOnlyPrompt(question.prompt)
+    const german = question.prompt_de ? parseSliderOnlyPrompt(question.prompt_de) : null
+    const italian = question.prompt_it ? parseSliderOnlyPrompt(question.prompt_it) : null
+    setEditingQuestionId(question.id)
+    setQuestionSessionId(question.session_id)
+    setSliderOnly(Boolean(english))
+    setPrompt(english?.question ?? question.prompt)
+    setSliderTitle(english?.sliders[0].title ?? '')
+    setSubtitle(english?.sliders[0].subtitle ?? '')
+    setSecondSliderTitle(english?.sliders[1].title ?? '')
+    setSecondSubtitle(english?.sliders[1].subtitle ?? '')
+    setEndpoints(endpointFields(question.x_axis_label, question.y_axis_label))
+    setPromptDe(german?.question ?? question.prompt_de ?? '')
+    setSliderTitleDe(german?.sliders[0].title ?? '')
+    setSubtitleDe(german?.sliders[0].subtitle ?? '')
+    setSecondSliderTitleDe(german?.sliders[1].title ?? '')
+    setSecondSubtitleDe(german?.sliders[1].subtitle ?? '')
+    setEndpointsDe(endpointFields(question.x_axis_label_de, question.y_axis_label_de))
+    setPromptIt(italian?.question ?? question.prompt_it ?? '')
+    setSliderTitleIt(italian?.sliders[0].title ?? '')
+    setSubtitleIt(italian?.sliders[0].subtitle ?? '')
+    setSecondSliderTitleIt(italian?.sliders[1].title ?? '')
+    setSecondSubtitleIt(italian?.sliders[1].subtitle ?? '')
+    setEndpointsIt(endpointFields(question.x_axis_label_it, question.y_axis_label_it))
+    window.requestAnimationFrame(() => document.querySelector('#question-editor')?.scrollIntoView?.({ behavior: 'smooth' }))
+  }
+
+  const handleSaveQuestion = (event: FormEvent) => {
     event.preventDefault()
     void runAction(async () => {
-      await createAdminQuestion(token, {
-        session_id: questionSessionId,
+      const questionData = {
         prompt: sliderOnly
           ? encodeSliderOnlyPrompt(
               prompt,
@@ -209,26 +273,18 @@ export function AdminDashboard() {
           : promptIt.trim() || null,
         x_axis_label_it: encodeAxisEndpoints(endpointsIt.xNegative, endpointsIt.xPositive),
         y_axis_label_it: encodeAxisEndpoints(endpointsIt.yNegative, endpointsIt.yPositive),
-      })
-      setPrompt('')
-      setSliderTitle('')
-      setSubtitle('')
-      setSecondSliderTitle('')
-      setSecondSubtitle('')
-      setEndpoints(EMPTY_ENDPOINTS)
-      setPromptDe('')
-      setSliderTitleDe('')
-      setSubtitleDe('')
-      setSecondSliderTitleDe('')
-      setSecondSubtitleDe('')
-      setEndpointsDe(EMPTY_ENDPOINTS)
-      setPromptIt('')
-      setSliderTitleIt('')
-      setSubtitleIt('')
-      setSecondSliderTitleIt('')
-      setSecondSubtitleIt('')
-      setEndpointsIt(EMPTY_ENDPOINTS)
-      setSliderOnly(false)
+      }
+      if (editingQuestionId) {
+        await updateAdminQuestion(token, editingQuestionId, questionData)
+        setNotice('Question and labels updated.')
+      } else {
+        await createAdminQuestion(token, {
+          session_id: questionSessionId,
+          ...questionData,
+        })
+        setNotice('Question added.')
+      }
+      resetQuestionForm()
       await refresh()
     })
   }
@@ -347,15 +403,25 @@ export function AdminDashboard() {
                   .map((question) => (
                     <li key={question.id}>
                       <span>{displayPrompt(question.prompt)}</span>
-                      <button
-                        className="admin-danger-button"
-                        type="button"
-                        disabled={busy || session.is_open}
-                        title={session.is_open ? 'Close this session before deleting questions.' : undefined}
-                        onClick={() => handleDeleteQuestion(question)}
-                      >
-                        Delete question
-                      </button>
+                      <div className="admin-question-actions">
+                        <button
+                          type="button"
+                          disabled={busy || session.is_open}
+                          title={session.is_open ? 'Close this session before editing questions.' : undefined}
+                          onClick={() => startEditingQuestion(question)}
+                        >
+                          Edit question
+                        </button>
+                        <button
+                          className="admin-danger-button"
+                          type="button"
+                          disabled={busy || session.is_open}
+                          title={session.is_open ? 'Close this session before deleting questions.' : undefined}
+                          onClick={() => handleDeleteQuestion(question)}
+                        >
+                          Delete question
+                        </button>
+                      </div>
                     </li>
                   ))}
               </ol>
@@ -369,13 +435,13 @@ export function AdminDashboard() {
         </form>
       </section>
 
-      <section className="admin-panel">
-        <h2>Add an ordered question</h2>
+      <section className="admin-panel" id="question-editor">
+        <h2>{editingQuestionId ? 'Edit question and labels' : 'Add an ordered question'}</h2>
         {closedSessions.length === 0 ? (
           <p>Close or create a session before adding questions.</p>
         ) : (
-          <form className="admin-question-form" onSubmit={handleCreateQuestion}>
-            <label>Session<select value={questionSessionId} onChange={(event) => setQuestionSessionId(event.target.value)} required>
+          <form className="admin-question-form" onSubmit={handleSaveQuestion}>
+            <label>Session<select value={questionSessionId} onChange={(event) => setQuestionSessionId(event.target.value)} required disabled={Boolean(editingQuestionId)}>
               {closedSessions.map((session) => <option key={session.id} value={session.id}>{session.title}</option>)}
             </select></label>
             <label className="admin-checkbox">
@@ -426,7 +492,10 @@ export function AdminDashboard() {
               )}
               <EndpointInputs language="Italian" value={endpointsIt} onChange={setEndpointsIt} sliderOnly={sliderOnly} />
             </fieldset>
-            <button type="submit" disabled={busy}>Add question</button>
+            <div className="admin-form-actions">
+              <button type="submit" disabled={busy}>{editingQuestionId ? 'Save changes' : 'Add question'}</button>
+              {editingQuestionId && <button type="button" disabled={busy} onClick={resetQuestionForm}>Cancel editing</button>}
+            </div>
           </form>
         )}
       </section>

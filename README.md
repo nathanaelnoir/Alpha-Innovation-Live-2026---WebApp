@@ -66,6 +66,7 @@ Available endpoints:
 - `GET /api/v1/questions/active`
 - `GET /api/v1/questions` (organizer Bearer token required)
 - `POST /api/v1/questions` (organizer Bearer token required)
+- `PUT /api/v1/questions/{question_id}` (organizer token required)
 - `PUT /api/v1/questions/{question_id}/activate` (legacy session-open alias)
 - `PUT /api/v1/questions/{question_id}/close` (legacy session-close alias)
 - `DELETE /api/v1/questions/{question_id}` (organizer token required)
@@ -172,9 +173,9 @@ three languages.
 
 Open `/admin` on the frontend origin and enter `RESULTS_EXPORT_TOKEN`. The token
 is held only in the current page's memory. The dashboard can create sessions,
-add ordered questions to closed sessions, open or close sessions, refresh state,
-download the protected CSV export, and permanently delete closed sessions or
-questions with confirmation. Deleting a question also deletes its responses;
+add or edit questions and labels in closed sessions, open or close sessions,
+refresh state, download the protected CSV export, and permanently delete closed
+sessions or questions with confirmation. Deleting a question also deletes its responses;
 deleting a session deletes its questions and their responses.
 
 The dashboard danger zone can wipe all collected responses and pseudonymous

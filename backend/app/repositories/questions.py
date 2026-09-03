@@ -93,6 +93,33 @@ async def create_question(
     return question
 
 
+async def update_question(
+    session: AsyncSession,
+    question: Question,
+    *,
+    prompt: str,
+    x_axis_label: str | None,
+    y_axis_label: str | None,
+    prompt_de: str | None,
+    x_axis_label_de: str | None,
+    y_axis_label_de: str | None,
+    prompt_it: str | None,
+    x_axis_label_it: str | None,
+    y_axis_label_it: str | None,
+) -> Question:
+    question.prompt = prompt
+    question.x_axis_label = x_axis_label
+    question.y_axis_label = y_axis_label
+    question.prompt_de = prompt_de
+    question.x_axis_label_de = x_axis_label_de
+    question.y_axis_label_de = y_axis_label_de
+    question.prompt_it = prompt_it
+    question.x_axis_label_it = x_axis_label_it
+    question.y_axis_label_it = y_axis_label_it
+    await session.flush()
+    return question
+
+
 async def acquire_active_question_lock(session: AsyncSession) -> None:
     statement = select(func.pg_advisory_xact_lock(ACTIVE_QUESTION_ADVISORY_LOCK))
     await session.execute(statement)

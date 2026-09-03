@@ -69,7 +69,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return _error_response(
             status.HTTP_409_CONFLICT,
             "session_not_editable",
-            "Close the session before adding questions.",
+            "Close the session before changing its questions.",
         )
 
     @app.exception_handler(SurveySessionDeletionConflictError)

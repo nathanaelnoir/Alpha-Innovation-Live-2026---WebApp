@@ -5,7 +5,12 @@ from fastapi import APIRouter, Path, status
 
 from app.api.dependencies import OrganizerAccessDependency, SessionDependency
 from app.schemas.error import ErrorResponse
-from app.schemas.question import ActiveQuestion, QuestionAdminView, QuestionCreate
+from app.schemas.question import (
+    ActiveQuestion,
+    QuestionAdminView,
+    QuestionCreate,
+    QuestionUpdate,
+)
 from app.services.questions import (
     activate_question,
     close_question,
@@ -13,6 +18,7 @@ from app.services.questions import (
     delete_question,
     get_active_question,
     list_questions,
+    update_question,
 )
 
 router = APIRouter(prefix="/questions", tags=["Questions"])
@@ -111,6 +117,34 @@ async def create_question_route(
     session: SessionDependency,
 ) -> QuestionAdminView:
     return await create_question(session, question_data)
+
+
+@router.put(
+    "/{question_id}",
+    response_model=QuestionAdminView,
+    summary="Update a survey question",
+    description=(
+        "Updates question text, translations, and axis labels. The owning session "
+        "must be closed and organizer authorization is required."
+    ),
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+        status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse},
+    },
+    operation_id="updateQuestion",
+)
+async def update_question_route(
+    question_id: Annotated[
+        uuid.UUID, Path(description="UUID of the question to update.")
+    ],
+    question_data: QuestionUpdate,
+    _authorized: OrganizerAccessDependency,
+    session: SessionDependency,
+) -> QuestionAdminView:
+    return await update_question(session, question_id, question_data)
 
 
 @router.delete(

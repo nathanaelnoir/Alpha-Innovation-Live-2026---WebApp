@@ -24,8 +24,14 @@ from app.repositories.questions import (
 )
 from app.repositories.questions import get_question_for_activation
 from app.repositories.questions import list_questions as retrieve_questions
+from app.repositories.questions import update_question as persist_question_update
 from app.repositories.survey_sessions import get_session_for_update
-from app.schemas.question import ActiveQuestion, QuestionAdminView, QuestionCreate
+from app.schemas.question import (
+    ActiveQuestion,
+    QuestionAdminView,
+    QuestionCreate,
+    QuestionUpdate,
+)
 from app.services.survey_sessions import close_session as close_survey_session
 from app.services.survey_sessions import open_session as open_survey_session
 
@@ -97,6 +103,32 @@ async def create_question(
             )
     except SQLAlchemyError as error:
         logger.error("question_creation_failed")
+        raise QuestionPersistenceError from error
+    return _to_admin_view(question)
+
+
+async def update_question(
+    session: AsyncSession,
+    question_id: uuid.UUID,
+    question_data: QuestionUpdate,
+) -> QuestionAdminView:
+    try:
+        async with session.begin():
+            question = await get_question_for_activation(session, question_id)
+            if question is None:
+                raise QuestionNotFoundError
+            survey_session = await get_session_for_update(session, question.session_id)
+            if survey_session is None:
+                raise SurveySessionNotFoundError
+            if survey_session.is_open:
+                raise SurveySessionNotEditableError
+            question = await persist_question_update(
+                session,
+                question,
+                **question_data.model_dump(),
+            )
+    except SQLAlchemyError as error:
+        logger.error("question_update_failed")
         raise QuestionPersistenceError from error
     return _to_admin_view(question)
 

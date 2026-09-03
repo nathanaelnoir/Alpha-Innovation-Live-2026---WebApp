@@ -11,6 +11,7 @@ import {
   listAdminQuestions,
   listAdminSessions,
   setAdminSessionOpen,
+  updateAdminQuestion,
   wipeAdminCollectedData,
 } from './api'
 import type { AdminSession } from './types'
@@ -28,6 +29,7 @@ vi.mock('./api', async (importOriginal) => {
     listAdminQuestions: vi.fn(),
     listAdminSessions: vi.fn(),
     setAdminSessionOpen: vi.fn(),
+    updateAdminQuestion: vi.fn(),
     wipeAdminCollectedData: vi.fn(),
   }
 })
@@ -240,6 +242,67 @@ describe('AdminDashboard', () => {
         y_axis_label_it: null,
       })
     })
+  })
+
+  it('prefills and updates a closed question and its labels', async () => {
+    const editableQuestion = {
+      id: 'question-closed',
+      session_id: closedSession.id,
+      position: 1,
+      prompt: 'What changed?',
+      x_axis_label: 'Internal ↔ External',
+      y_axis_label: 'Past ↔ Future',
+      prompt_de: 'Was hat sich verändert?',
+      x_axis_label_de: 'Intern ↔ Extern',
+      y_axis_label_de: 'Vergangenheit ↔ Zukunft',
+      prompt_it: null,
+      x_axis_label_it: null,
+      y_axis_label_it: null,
+      is_active: false,
+    }
+    vi.mocked(listAdminQuestions).mockResolvedValue([editableQuestion])
+    vi.mocked(updateAdminQuestion).mockResolvedValue({
+      ...editableQuestion,
+      prompt: 'What changed most?',
+      x_axis_label: 'Inside ↔ Outside',
+    })
+    render(<AdminDashboard />)
+    await userEvent.type(screen.getByLabelText('Organizer token'), 'organizer-secret')
+    await userEvent.click(screen.getByRole('button', { name: 'Open dashboard' }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit question' }))
+    expect(screen.getByRole('heading', { name: 'Edit question and labels' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Question')).toHaveValue('What changed?')
+    expect(screen.getByLabelText('X negative / left')).toHaveValue('Internal')
+    expect(screen.getByLabelText('Y positive / top')).toHaveValue('Future')
+    expect(screen.getByLabelText('German X positive / right')).toHaveValue('Extern')
+
+    await userEvent.clear(screen.getByLabelText('Question'))
+    await userEvent.type(screen.getByLabelText('Question'), 'What changed most?')
+    await userEvent.clear(screen.getByLabelText('X negative / left'))
+    await userEvent.type(screen.getByLabelText('X negative / left'), 'Inside')
+    await userEvent.clear(screen.getByLabelText('X positive / right'))
+    await userEvent.type(screen.getByLabelText('X positive / right'), 'Outside')
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(updateAdminQuestion).toHaveBeenCalledWith(
+        'organizer-secret',
+        editableQuestion.id,
+        {
+          prompt: 'What changed most?',
+          x_axis_label: 'Inside ↔ Outside',
+          y_axis_label: 'Past ↔ Future',
+          prompt_de: 'Was hat sich verändert?',
+          x_axis_label_de: 'Intern ↔ Extern',
+          y_axis_label_de: 'Vergangenheit ↔ Zukunft',
+          prompt_it: null,
+          x_axis_label_it: null,
+          y_axis_label_it: null,
+        },
+      )
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Question and labels updated.')
   })
 
   it('warns before deleting closed questions and sessions', async () => {

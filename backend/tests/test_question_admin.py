@@ -9,13 +9,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.exceptions import SurveySessionNotEditableError
 from app.db.session import get_session
 from app.main import create_app
 from app.models.question import Question
 from app.models.survey_session import SurveySession
 from app.repositories.questions import list_questions as retrieve_questions
-from app.schemas.question import QuestionCreate
-from app.services.questions import create_question, list_questions
+from app.schemas.question import QuestionCreate, QuestionUpdate
+from app.services.questions import create_question, list_questions, update_question
 
 ORGANIZER_TOKEN = "organizer-results-token-with-32-characters"
 SESSION_ID = uuid.uuid4()
@@ -75,6 +76,20 @@ def test_question_input_is_trimmed_and_blank_labels_become_null() -> None:
     assert question.prompt_it is None
 
 
+def test_question_update_input_is_trimmed_and_blank_labels_become_null() -> None:
+    question = QuestionUpdate(
+        prompt="  Updated question  ",
+        x_axis_label=" Left ",
+        y_axis_label="   ",
+        prompt_de="  Aktualisierte Frage  ",
+    )
+
+    assert question.prompt == "Updated question"
+    assert question.x_axis_label == "Left"
+    assert question.y_axis_label is None
+    assert question.prompt_de == "Aktualisierte Frage"
+
+
 @pytest.mark.asyncio
 async def test_create_question_service_stores_question_inactive() -> None:
     session = make_session()
@@ -101,6 +116,55 @@ async def test_create_question_service_stores_question_inactive() -> None:
     assert result.is_active is False
     session.begin.return_value.__aexit__.assert_awaited_once()
     session.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_question_service_replaces_text_and_labels() -> None:
+    question = make_question()
+    survey_session = SurveySession(id=SESSION_ID, title="Opening", is_open=False)
+    session = make_session()
+    session.execute.side_effect = [
+        scalar_result(question),
+        scalar_result(survey_session),
+    ]
+
+    result = await update_question(
+        session,
+        question.id,
+        QuestionUpdate(
+            prompt="Updated question",
+            x_axis_label="Left ↔ Right",
+            y_axis_label="Bottom ↔ Top",
+            prompt_de="Aktualisierte Frage",
+        ),
+    )
+
+    assert result.prompt == "Updated question"
+    assert result.x_axis_label == "Left ↔ Right"
+    assert result.y_axis_label == "Bottom ↔ Top"
+    assert result.prompt_de == "Aktualisierte Frage"
+    session.flush.assert_awaited_once()
+    session.begin.return_value.__aexit__.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_question_service_rejects_open_session() -> None:
+    question = make_question(active=True)
+    survey_session = SurveySession(id=SESSION_ID, title="Opening", is_open=True)
+    session = make_session()
+    session.execute.side_effect = [
+        scalar_result(question),
+        scalar_result(survey_session),
+    ]
+
+    with pytest.raises(SurveySessionNotEditableError):
+        await update_question(
+            session,
+            question.id,
+            QuestionUpdate(prompt="Unsafe live edit"),
+        )
+
+    session.flush.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -180,6 +244,52 @@ async def test_organizer_can_create_question() -> None:
     assert response.json()["prompt_de"] == "Wie sicher fühlen Sie sich?"
     assert response.json()["prompt_it"] == "Quanto si sente sicuro?"
     assert response.json()["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_organizer_can_update_question_in_closed_session() -> None:
+    question = make_question()
+    survey_session = SurveySession(id=SESSION_ID, title="Opening", is_open=False)
+    session = make_session()
+    session.execute.side_effect = [
+        scalar_result(question),
+        scalar_result(survey_session),
+    ]
+
+    response = await request_question_admin(
+        session,
+        "PUT",
+        f"/api/v1/questions/{question.id}",
+        payload={
+            "prompt": "Updated question",
+            "x_axis_label": "Low ↔ High",
+            "y_axis_label": "Past ↔ Future",
+            "prompt_de": "Aktualisierte Frage",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["prompt"] == "Updated question"
+    assert response.json()["x_axis_label"] == "Low ↔ High"
+    assert response.json()["y_axis_label"] == "Past ↔ Future"
+
+
+@pytest.mark.asyncio
+async def test_question_update_requires_organizer_token() -> None:
+    question = make_question()
+    session = make_session()
+
+    response = await request_question_admin(
+        session,
+        "PUT",
+        f"/api/v1/questions/{question.id}",
+        token=None,
+        payload={"prompt": "Unauthorized edit"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "unauthorized_organizer_access"
+    session.execute.assert_not_awaited()
 
 
 @pytest.mark.asyncio

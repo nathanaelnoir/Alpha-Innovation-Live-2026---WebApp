@@ -497,10 +497,11 @@ h1 {
 .admin-session > div span { color: #888; font-size: .72rem; }
 .admin-session-actions { display: flex !important; grid-auto-flow: column; gap: 8px !important; }
 .admin-session ol { grid-column: 1 / -1; display: grid; gap: 8px; margin: 0; padding: 12px 0 0 24px; border-top: 1px solid #242424; color: #bbb; font-size: .82rem; line-height: 1.7; }
-.admin-session li { padding-left: 3px; }
+.admin-session li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 3px; }
 .admin-session li::marker { color: #666; }
 .admin-session li > span { margin-right: 12px; }
-.admin-session li > button { min-height: 28px; padding-inline: 9px; font-size: .62rem; }
+.admin-question-actions { display: flex !important; grid-auto-flow: column; gap: 6px !important; }
+.admin-question-actions button { min-height: 28px; padding-inline: 9px; font-size: .62rem; }
 .admin-status { color: #888; font-size: .68rem; text-transform: uppercase; }
 .admin-status--open { color: #7f9cff; }
 .admin-status--open::before { content: "●"; margin-right: 6px; }
@@ -516,6 +517,7 @@ h1 {
 .admin-quadrant-preview span:nth-child(-n+2) { border-bottom: 1px solid #555; }
 .admin-quadrant-preview strong { color: var(--white); }
 .admin-question-form button { justify-self: start; }
+.admin-form-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .admin-shell label { display: grid; gap: 7px; color: #aaa; font-size: .72rem; }
 .admin-shell input, .admin-shell select, .admin-shell textarea { min-height: 42px; width: 100%; padding: 8px 10px; border: 1px solid #555; border-radius: 0; color: var(--white); background: #050505; font: inherit; }
 .admin-shell textarea { resize: vertical; line-height: 1.45; }
