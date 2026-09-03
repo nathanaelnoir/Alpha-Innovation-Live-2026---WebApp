@@ -5,6 +5,7 @@ import { evaluate, getAudioContext, getSuperdoughAudioController, hush, initAudi
 import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt, selectPresentationSlides } from "./questionContent.js";
 
 const TARGET_SECONDS = 16.5;
+const MIN_POINTS = 1;
 const MAX_POINTS = 150;
 const LOOKAHEAD = 0.16;
 const FIRST_RUN_LOOKAHEAD = 0.45;
@@ -155,6 +156,7 @@ function validateDataset(raw) {
       y: parseAxisEndpoints(raw.axisLabels?.y),
     },
     sliderDescriptions: raw.sliderDescriptions ?? null,
+    sessionId: raw.sessionId ?? null,
     sessionTitle: raw.sessionTitle ?? null,
     points,
     dropped,
