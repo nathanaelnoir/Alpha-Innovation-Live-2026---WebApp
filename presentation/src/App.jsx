@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as Tone from "tone";
 import * as THREE from "three";
 import { evaluate, getAudioContext, getSuperdoughAudioController, hush, initAudio, initStrudel } from "@strudel/web";
+import { displayPrompt, parseAxisEndpoints, parseSliderOnlyPrompt } from "./questionContent.js";
 
 const TARGET_SECONDS = 16.5;
 const MIN_POINTS = 1;
@@ -14,7 +15,6 @@ const DATA_CLEAR_MS = 1100;
 const BETWEEN_HOLD_MS = 275;
 const NEXT_QUESTION_BLEND_MS = 1320;
 const FINAL_RELEASE_SECONDS = 0.06;
-const AUTO_START_DELAY_MS = 3000;
 const AUDIO_TEMPO_SCALE = 0.92;
 const STRUDEL_CPM = 70 * AUDIO_TEMPO_SCALE;
 const STRUDEL_BACKGROUND = `
@@ -152,6 +152,11 @@ function validateDataset(raw) {
     question: raw.question.trim(),
     translations: raw.translations ?? null,
     axisLabels: raw.axisLabels ?? null,
+    axisEndpoints: raw.axisEndpoints ?? {
+      x: parseAxisEndpoints(raw.axisLabels?.x),
+      y: parseAxisEndpoints(raw.axisLabels?.y),
+    },
+    sliderDescriptions: raw.sliderDescriptions ?? null,
     sessionTitle: raw.sessionTitle ?? null,
     points,
     dropped,
@@ -160,25 +165,33 @@ function validateDataset(raw) {
 
 function presentationToDatasets(presentation) {
   if (!presentation || !Array.isArray(presentation.questions)) return [];
-  return presentation.questions.map((question) => ({
-    id: question.id,
-    position: question.position,
-    question: question.prompt,
-    translations: {
-      EN: question.prompt,
-      DE: question.prompt_de,
-      IT: question.prompt_it,
-    },
-    axisLabels: {
-      x: question.x_axis_label,
-      y: question.y_axis_label,
-    },
-    sessionTitle: presentation.title,
-    points: question.points.map((point) => ({
-      x: Number(point.x) * 2 - 1,
-      y: Number(point.y) * 2 - 1,
-    })),
-  }));
+  return presentation.questions.map((question) => {
+    const sliderContent = parseSliderOnlyPrompt(question.prompt);
+    return {
+      id: question.id,
+      position: question.position,
+      question: displayPrompt(question.prompt),
+      translations: {
+        EN: displayPrompt(question.prompt),
+        DE: question.prompt_de ? displayPrompt(question.prompt_de) : null,
+        IT: question.prompt_it ? displayPrompt(question.prompt_it) : null,
+      },
+      axisLabels: {
+        x: question.x_axis_label,
+        y: question.y_axis_label,
+      },
+      axisEndpoints: {
+        x: parseAxisEndpoints(question.x_axis_label),
+        y: parseAxisEndpoints(question.y_axis_label),
+      },
+      sliderDescriptions: sliderContent?.sliders ?? null,
+      sessionTitle: presentation.title,
+      points: question.points.map((point) => ({
+        x: Number(point.x) * 2 - 1,
+        y: Number(point.y) * 2 - 1,
+      })),
+    };
+  });
 }
 
 async function fetchPresentations(token) {
@@ -577,9 +590,27 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
       const axisLabelFontSize = 20;
       const axisLabelOffset = axisLabelFontSize + 10;
       ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-      ctx.textAlign = "right";
-      if (dataset?.axisLabels?.x) ctx.fillText(dataset.axisLabels.x.toUpperCase(), right, bottom + axisLabelOffset);
-      if (dataset?.axisLabels?.y) {
+      const xEndpoints = dataset?.axisEndpoints?.x;
+      const yEndpoints = dataset?.axisEndpoints?.y;
+      if (xEndpoints) {
+        ctx.textAlign = "left";
+        ctx.fillText(xEndpoints.negative.toUpperCase(), left, bottom + axisLabelOffset);
+        ctx.textAlign = "right";
+        ctx.fillText(xEndpoints.positive.toUpperCase(), right, bottom + axisLabelOffset);
+      } else if (dataset?.axisLabels?.x) {
+        ctx.textAlign = "right";
+        ctx.fillText(dataset.axisLabels.x.toUpperCase(), right, bottom + axisLabelOffset);
+      }
+      if (yEndpoints) {
+        ctx.save();
+        ctx.translate(left - axisLabelOffset, bottom);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = "left";
+        ctx.fillText(yEndpoints.negative.toUpperCase(), 0, 0);
+        ctx.textAlign = "right";
+        ctx.fillText(yEndpoints.positive.toUpperCase(), plotSize, 0);
+        ctx.restore();
+      } else if (dataset?.axisLabels?.y) {
         ctx.save();
         ctx.translate(left - axisLabelOffset, top);
         ctx.rotate(-Math.PI / 2);
@@ -961,7 +992,7 @@ function SessionApp({ initialSource, sessionTitle }) {
   const [targetSeconds, setTargetSeconds] = useState(TARGET_SECONDS);
   const [paste, setPaste] = useState("");
   const [sessionStarted, setSessionStarted] = useState(false);
-  const [hintVisible, setHintVisible] = useState(false);
+  const [actionPending, setActionPending] = useState(false);
   const [clearStartedAt, setClearStartedAt] = useState(0);
   const [coordinateRevealStartedAt, setCoordinateRevealStartedAt] = useState(0);
   const [runMeta, setRunMeta] = useState(null);
@@ -1141,20 +1172,6 @@ function SessionApp({ initialSource, sessionTitle }) {
     }
   }, [clearSchedule, dataset, datasetIndex, reducedMotion, source, targetSeconds]);
 
-  useEffect(() => {
-    if (state !== "question" || !dataset || !strudelReadyRef.current) return undefined;
-    const timer = window.setTimeout(async () => {
-      if (stateRef.current !== "question" || transitionBusyRef.current) return;
-      transitionBusyRef.current = true;
-      try {
-        await beginRun();
-      } finally {
-        transitionBusyRef.current = false;
-      }
-    }, AUTO_START_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [beginRun, dataset, state]);
-
   const advanceFromCleared = useCallback(async (blendFromVisual = false) => {
     if (datasetIndex >= source.length - 1) {
       setState("finished");
@@ -1194,16 +1211,21 @@ function SessionApp({ initialSource, sessionTitle }) {
     return () => window.clearTimeout(timer);
   }, [advanceFromCleared, reducedMotion, state]);
 
-  const handleSpace = useCallback(async () => {
+  const handleAdvance = useCallback(async () => {
     if (transitionBusyRef.current) return;
     const current = stateRef.current;
     if (["opening", "playing", "transforming", "between", "question-transition"].includes(current)) return;
     transitionBusyRef.current = true;
+    setActionPending(true);
     try {
       if (current === "question") {
         await beginRun();
       } else if (current === "complete") {
-        if (datasetIndex >= source.length - 1) return;
+        if (datasetIndex >= source.length - 1) {
+          stopPlayback();
+          setState("closing");
+          return;
+        }
         stopPlayback();
         setClearStartedAt(performance.now());
         setState("cleared");
@@ -1223,6 +1245,7 @@ function SessionApp({ initialSource, sessionTitle }) {
       }
     } finally {
       transitionBusyRef.current = false;
+      setActionPending(false);
     }
   }, [advanceFromCleared, beginRun, datasetIndex, loadDataset, reducedMotion, source.length, stopPlayback]);
 
@@ -1234,7 +1257,7 @@ function SessionApp({ initialSource, sessionTitle }) {
         const now = performance.now();
         if (now - lastKeyRef.current < 300) return;
         lastKeyRef.current = now;
-        void handleSpace();
+        void handleAdvance();
       } else if (event.key === "Escape" && stateRef.current === "playing") {
         stopPlayback();
         visualRef.current = { points: [], trail: [], mean: null, runDuration: null };
@@ -1244,14 +1267,7 @@ function SessionApp({ initialSource, sessionTitle }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleSpace, stopPlayback]);
-
-  useEffect(() => {
-    setHintVisible(false);
-    if (state === "playing") return undefined;
-    const id = window.setTimeout(() => setHintVisible(true), 1800);
-    return () => clearTimeout(id);
-  }, [state]);
+  }, [handleAdvance, stopPlayback]);
 
   useEffect(() => () => {
     stopPlayback();
@@ -1280,7 +1296,15 @@ function SessionApp({ initialSource, sessionTitle }) {
     }
   };
 
-  const hint = state === "question" ? "Start" : state === "complete" ? "Clear" : state === "cleared" ? (datasetIndex === source.length - 1 ? "Finish" : "Next question") : state === "closing" ? "Restart" : "";
+  const actionLabel = state === "question"
+    ? (sessionStarted ? `Start question ${String(datasetIndex + 1).padStart(2, "0")}` : "Start presentation")
+    : state === "complete"
+      ? (datasetIndex === source.length - 1 ? "Finish presentation" : "Next question")
+      : state === "cleared"
+        ? "Show next question"
+        : state === "closing"
+          ? "Restart presentation"
+          : "";
 
   return <main className={`app state-${state}`}>
     <style>{CSS}</style>
@@ -1291,10 +1315,26 @@ function SessionApp({ initialSource, sessionTitle }) {
         <div className="question-wrap">
           <p className="eyebrow">{dataset.sessionTitle ?? sessionTitle} – Question {String(dataset.position ?? datasetIndex + 1).padStart(2, "0")}</p>
           <h1>{getQuestionTranslations(dataset).map(([language, question]) => <span className="translation" key={language}><b>{language}</b><span>{question}</span></span>)}</h1>
+          {dataset.sliderDescriptions && <div className="slider-descriptions">
+            {dataset.sliderDescriptions.map((description, index) => (description.title || description.subtitle) && <div key={index}>
+              <b>{index === 0 ? "X" : "Y"}</b>
+              <span>
+                {description.title && <strong>{description.title}</strong>}
+                {description.subtitle && <small>{description.subtitle}</small>}
+              </span>
+            </div>)}
+          </div>}
         </div>
         <Plot dataset={dataset} state={state} visualRef={visualRef} clearStartedAt={clearStartedAt} coordinateRevealStartedAt={coordinateRevealStartedAt} reducedMotion={reducedMotion} />
       </>}
     </section>
+    {actionLabel && <footer>
+      <span className="status">{message || "Manual presentation control"}</span>
+      <button className="presentation-action" type="button" disabled={actionPending} onClick={() => void handleAdvance()}>
+        <span>{actionPending ? "Starting…" : actionLabel}</span>
+        <kbd>Space</kbd>
+      </button>
+    </footer>}
   </main>;
 }
 
@@ -1414,6 +1454,12 @@ const CSS = String.raw`
   .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
   .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: 1em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
+  .slider-descriptions { display: grid; gap: 12px; margin-top: 22px; }
+  .slider-descriptions > div { display: grid; grid-template-columns: 2.2em 1fr; gap: .65em; align-items: start; color: #aaa; font-size: 10px; line-height: 1.4; }
+  .slider-descriptions > div > b { color: #2e84ff; font-size: 9px; letter-spacing: .14em; }
+  .slider-descriptions span, .slider-descriptions small { display: block; }
+  .slider-descriptions strong { color: #fff; font-size: 11px; font-weight: 500; text-transform: uppercase; }
+  .slider-descriptions small { margin-top: 2px; color: #888; font-size: 9px; }
   .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
   .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 52px); transform: translateY(-50%); }
@@ -1441,8 +1487,10 @@ const CSS = String.raw`
   .closing h1 { font-size: clamp(34px, 5vw, 72px); }
   footer { position: absolute; z-index: 6; left: 22px; right: 22px; bottom: 18px; min-height: 28px; display: flex; align-items: center; border-top: 1px solid #222; padding-top: 8px; }
   .status { color: #777; font: 300 8px "DM Mono", monospace; letter-spacing: .07em; text-transform: uppercase; }
-  .hint { margin-left: auto; display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity 160ms linear; color: #fff; font: 400 9px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
-  .hint.visible { opacity: 1; }
+  .presentation-action { margin-left: auto; display: flex; align-items: center; gap: 12px; border: 0; padding: 0; background: transparent; color: #fff; cursor: pointer; font: 500 10px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
+  .presentation-action:hover span, .presentation-action:focus-visible span { color: #2e84ff; }
+  .presentation-action:focus-visible { outline: 1px solid #2e84ff; outline-offset: 7px; }
+  .presentation-action:disabled { opacity: .5; cursor: wait; }
   kbd { min-width: 48px; padding: 5px 8px; border: 1px solid #fff; border-radius: 0; background: #000; color: #fff; text-align: center; font: 400 8px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
   .setup { position: absolute; z-index: 10; top: 46px; right: 22px; width: min(286px, calc(100vw - 44px)); color: #aaa; }
   .setup details { border: 1px solid #333; border-radius: 0; background: #000; }

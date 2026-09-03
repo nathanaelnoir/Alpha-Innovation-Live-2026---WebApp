@@ -27,5 +27,6 @@ fi
 
 (
     cd "${project_dir}/presentation"
+    npm run test
     npm run build
 )

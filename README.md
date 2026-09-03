@@ -191,7 +191,11 @@ keyword. The keyword is sent only to the protected backend endpoint and is not
 stored by the page or included in the static frontend build. The presentation
 loads every question with stored responses across all sessions in session and
 question order. Sessions may remain closed; opening them is only necessary when
-participants should be allowed to answer.
+participants should be allowed to answer. Encoded slider-only questions are
+shown as readable question text with their two slider descriptions, and encoded
+axis endpoints are placed at the corresponding sides of the visualization.
+Each question waits for the presenter to use the on-screen action button or the
+Space key before its animation and audio begin.
 
 ### Backend setup
 
@@ -221,8 +225,9 @@ scripts/check
 
 The root check script runs Ruff, formatting, Mypy, all backend tests against the
 isolated PostgreSQL test database, the migration drift check, ESLint, all
-frontend tests, and the Vite production build. Backend integration tests apply
-pending migrations to the `_test` database before executing.
+frontend and presentation tests, and both Vite production builds. Backend
+integration tests apply pending migrations to the `_test` database before
+executing.
 
 Persistence and migration execution require a real PostgreSQL database. The
 integration tests use `TEST_DATABASE_URL`; SQLite is not used as a substitute.
