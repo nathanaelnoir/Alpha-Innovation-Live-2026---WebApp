@@ -195,9 +195,10 @@ last. If session or slider metadata is unavailable, stored question order is the
 fallback and the final question remains slide three. A question remains eligible
 when it currently has no response points. Sessions may remain closed; opening
 them is only necessary when participants should be allowed to answer. Encoded
-slider-only questions are shown as readable question text with their two slider
-descriptions, and encoded axis endpoints are placed at the corresponding sides
-of the visualization. A completed slide remains on screen until the presenter
+slider-only questions are shown as readable question text; their slider titles
+label the corresponding visualization axes while their explanatory subtitles
+are omitted. Encoded axis endpoints are placed at the corresponding sides of
+the visualization. A completed slide remains on screen until the presenter
 uses the on-screen action button or Space key; that single action transitions to
 and starts the next slide.
 

@@ -623,6 +623,26 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
         ctx.restore();
       }
 
+      // Slider-only questions still resolve into the same two-dimensional
+      // result field. Put each slider title on its corresponding axis instead
+      // of repeating its title and explanatory subtitle beside the question.
+      const xAxisTitle = dataset?.sliderDescriptions?.[0]?.title;
+      const yAxisTitle = dataset?.sliderDescriptions?.[1]?.title;
+      ctx.fillStyle = `rgba(46,132,255,${0.96 * fade * introAlpha})`;
+      ctx.font = "500 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      if (xAxisTitle) {
+        ctx.textAlign = "center";
+        ctx.fillText(xAxisTitle.toUpperCase(), X(0), bottom + axisLabelOffset);
+      }
+      if (yAxisTitle) {
+        ctx.save();
+        ctx.translate(left - axisLabelOffset, Y(0));
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = "center";
+        ctx.fillText(yAxisTitle.toUpperCase(), 0, 0);
+        ctx.restore();
+      }
+
       // Minimal key, placed in the lower-left outer gutter.
       const legendX = clamp(left * 0.16, 22, 54);
       const legendGap = 42;
@@ -1274,15 +1294,6 @@ function SessionApp({ initialSource, sessionTitle }) {
         <div className="question-wrap">
           <p className="eyebrow">{dataset.sessionTitle ?? sessionTitle} – Question {String(dataset.position ?? datasetIndex + 1).padStart(2, "0")}</p>
           <h1>{getQuestionTranslations(dataset).map(([language, question]) => <span className="translation" key={language}><b>{language}</b><span>{question}</span></span>)}</h1>
-          {dataset.sliderDescriptions && <div className="slider-descriptions">
-            {dataset.sliderDescriptions.map((description, index) => (description.title || description.subtitle) && <div key={index}>
-              <b>{index === 0 ? "X" : "Y"}</b>
-              <span>
-                {description.title && <strong>{description.title}</strong>}
-                {description.subtitle && <small>{description.subtitle}</small>}
-              </span>
-            </div>)}
-          </div>}
         </div>
         <Plot dataset={dataset} state={state} visualRef={visualRef} clearStartedAt={clearStartedAt} coordinateRevealStartedAt={coordinateRevealStartedAt} reducedMotion={reducedMotion} />
       </>}
@@ -1413,12 +1424,6 @@ const CSS = String.raw`
   .question-wrap h1, .closing h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
   .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: 1em 0; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
-  .slider-descriptions { display: grid; gap: 12px; margin-top: 22px; }
-  .slider-descriptions > div { display: grid; grid-template-columns: 2.2em 1fr; gap: .65em; align-items: start; color: #aaa; font-size: 10px; line-height: 1.4; }
-  .slider-descriptions > div > b { color: #2e84ff; font-size: 9px; letter-spacing: .14em; }
-  .slider-descriptions span, .slider-descriptions small { display: block; }
-  .slider-descriptions strong { color: #fff; font-size: 11px; font-weight: 500; text-transform: uppercase; }
-  .slider-descriptions small { margin-top: 2px; color: #888; font-size: 9px; }
   .eyebrow, .closing p { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
   .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 52px); transform: translateY(-50%); }
