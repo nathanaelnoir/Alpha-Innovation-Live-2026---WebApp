@@ -628,8 +628,8 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
       // of repeating its title and explanatory subtitle beside the question.
       const xAxisTitle = dataset?.sliderDescriptions?.[0]?.title;
       const yAxisTitle = dataset?.sliderDescriptions?.[1]?.title;
-      ctx.fillStyle = `rgba(46,132,255,${0.96 * fade * introAlpha})`;
-      ctx.font = "500 12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.fillStyle = `rgba(255,255,255,${0.88 * fade * introAlpha})`;
+      ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       if (xAxisTitle) {
         ctx.textAlign = "center";
         ctx.fillText(xAxisTitle.toUpperCase(), X(0), bottom + axisLabelOffset);
