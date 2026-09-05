@@ -121,10 +121,10 @@ const QUESTION_TRANSLATIONS = {
 
 function getQuestionTranslations(dataset) {
   if (dataset?.translations) {
-    return Object.entries(dataset.translations).filter(([, question]) => question);
+    return Object.entries(dataset.translations).filter(([language, question]) => language !== "EN" && question);
   }
   const translations = QUESTION_TRANSLATIONS[dataset?.id];
-  return translations ? Object.entries(translations) : [["EN", dataset?.question ?? ""]];
+  return translations ? Object.entries(translations).filter(([language]) => language !== "EN") : [];
 }
 
 // Keep question changes asynchronous so the transition waits for a complete dataset.
@@ -1411,17 +1411,17 @@ const CSS = String.raw`
   .stage { height: 100vh; position: relative; display: grid; place-items: center; }
   .question-wrap { z-index: 2; position: absolute; width: min(860px, 82vw); text-align: left; transition: top 495ms linear, opacity 264ms linear; }
   .question-wrap h1 { margin: 10px 0; font-weight: 300; font-size: clamp(29px, 4.4vw, 62px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
-  .translation { display: grid; grid-template-columns: 2.2em 1fr; gap: .45em; margin: 1em 0; }
+  .translation { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: .45em; margin: 1em 0; overflow-wrap: anywhere; }
   .translation b { align-self: center; justify-self: start; padding: .35em .45em; color: #000; background: #fff; font: 500 clamp(8px, .7vw, 11px) "DM Mono", monospace; letter-spacing: .14em; }
   .eyebrow { margin: 0; color: #2e84ff; text-transform: uppercase; letter-spacing: .2em; font: 400 8px "DM Mono", monospace; }
   .plot { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: 0; transition: opacity 242ms linear; }
-  .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 52px); transform: translateY(-50%); }
+  .state-question .question-wrap, .state-question-transition .question-wrap, .state-opening .question-wrap, .state-playing .question-wrap, .state-complete .question-wrap, .state-transforming .question-wrap { top: 50%; left: 22px; width: calc(25vw - 82px); transform: translateY(-50%); }
   .state-opening .question-wrap { animation: side-question-in 770ms ease-out both; }
   @keyframes side-question-in {
     from { opacity: 0; transform: translate(-12px, -50%); }
     to { opacity: 1; transform: translate(0, -50%); }
   }
-  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: 20px; line-height: 1.45; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
+  .state-question .question-wrap h1, .state-question-transition .question-wrap h1, .state-opening .question-wrap h1, .state-playing .question-wrap h1, .state-complete .question-wrap h1, .state-transforming .question-wrap h1 { margin: 8px 0 0; font-size: clamp(12px, 1.1vw, 16px); line-height: 1.4; font-weight: 400; letter-spacing: -.025em; text-transform: uppercase; }
   .state-question .question-wrap .eyebrow, .state-question-transition .question-wrap .eyebrow, .state-opening .question-wrap .eyebrow, .state-playing .question-wrap .eyebrow, .state-complete .question-wrap .eyebrow, .state-transforming .question-wrap .eyebrow { display: block; font-size: 14px; font-weight: 500; }
   .state-question .plot, .state-opening .plot, .state-playing .plot, .state-complete .plot { opacity: 1; }
   .state-finished .plot { opacity: 1; }
