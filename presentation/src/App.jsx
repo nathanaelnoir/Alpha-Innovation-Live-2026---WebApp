@@ -529,16 +529,13 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
       const introAlpha = state === "opening" ? reveal : 1;
       const axisAlpha = state === "cleared" ? 0.12 : 0.32;
 
-      // The reference uses one uninterrupted drafting grid behind a centered,
-      // nearly-square coordinate field. Keeping the outer grid visible makes
-      // the plot feel registered to the room rather than framed like a chart.
+      // Center the coordinate field within the presentation.
       const finalPlotSize = Math.min(w * (w < 720 ? 0.86 : 0.5), h * 0.86);
       const plotSize = finalPlotSize * (state === "opening" ? lerp(0.012, 1, reveal) : 1);
       const left = (w - plotSize) / 2;
       const top = (h - plotSize) / 2;
       const right = left + plotSize;
       const bottom = top + plotSize;
-      const gridStep = clamp(finalPlotSize / 13.5, 24, 36);
       const X = (x) => left + ((x + 1) / 2) * plotSize;
       const Y = (y) => bottom - ((y + 1) / 2) * plotSize;
 
@@ -546,17 +543,6 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
       // surrounding room without turning it into a conventional panel.
       ctx.fillStyle = `rgba(18,18,18,${introAlpha})`;
       ctx.fillRect(left, top, plotSize, plotSize);
-
-      ctx.lineWidth = 0.5;
-      ctx.strokeStyle = `rgba(190,202,210,${axisAlpha * 0.48 * introAlpha})`;
-      const gridOriginX = left % gridStep;
-      const gridOriginY = top % gridStep;
-      for (let x = gridOriginX; x <= w; x += gridStep) {
-        ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, 0); ctx.lineTo(Math.round(x) + 0.5, h); ctx.stroke();
-      }
-      for (let y = gridOriginY; y <= h; y += gridStep) {
-        ctx.beginPath(); ctx.moveTo(0, Math.round(y) + 0.5); ctx.lineTo(w, Math.round(y) + 0.5); ctx.stroke();
-      }
 
       // Brighter origin axes.
       const coordinateLineOpacity = axisAlpha * 1.35 * fade * introAlpha;
@@ -809,14 +795,6 @@ function FinalVisualization({ datasets }) {
       background.position.z = -0.035;
       layer.add(background);
 
-      const gridPositions = [];
-      for (let index = 0; index <= 10; index += 1) {
-        const coordinate = -planeSize / 2 + (index / 10) * planeSize;
-        gridPositions.push(coordinate, -planeSize / 2, 0, coordinate, planeSize / 2, 0);
-        gridPositions.push(-planeSize / 2, coordinate, 0, planeSize / 2, coordinate, 0);
-      }
-      const grid = lineObject(gridPositions, 0x596168, 0.28);
-      layer.add(grid);
       const axes = lineObject([
         -planeSize / 2, 0, 0.01, planeSize / 2, 0, 0.01,
         0, -planeSize / 2, 0.01, 0, planeSize / 2, 0.01,
@@ -859,7 +837,7 @@ function FinalVisualization({ datasets }) {
       secondArm.rotation.z = -Math.PI / 4;
       layer.add(firstArm, secondArm);
 
-      const materials = [backgroundMaterial, grid.material, axes.material, corners.material, pointMaterial, kMaterial];
+      const materials = [backgroundMaterial, axes.material, corners.material, pointMaterial, kMaterial];
       materials.forEach((material) => { material.userData.baseOpacity = material.opacity; material.opacity = 0; });
       layer.userData.materials = materials;
       layer.userData.revealAt = layerIndex === 0 ? 0 : 4 + layerIndex * 24;
