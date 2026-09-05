@@ -648,10 +648,6 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
       ctx.fillText("K VALUE / MEAN", legendX + 20, legendY + legendGap + 5);
 
       const visual = visualRef.current;
-      if (visual.trail.length > 1) {
-        ctx.strokeStyle = `rgba(255,255,255,${0.1 * dataFade})`; ctx.lineWidth = 0.5; ctx.beginPath();
-        visual.trail.forEach((p, i) => i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y))); ctx.stroke();
-      }
       visual.points.forEach((point) => {
         const age = now - point.revealedAt;
         const isSignal = !reducedMotion && state === "playing" && age < 140;
@@ -673,6 +669,21 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
         const scanX = lerp(left, right, lastPoint.progress);
         ctx.strokeStyle = `rgba(255,255,255,${0.24 * dataFade})`; ctx.lineWidth = 0.7;
         ctx.beginPath(); ctx.moveTo(scanX, top); ctx.lineTo(scanX, bottom); ctx.stroke();
+      }
+      if (visual.trail.length > 1) {
+        // Keep the mean's route visible above the participant markers.
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        visual.trail.forEach((p, i) => i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y)));
+        ctx.strokeStyle = `rgba(0,0,0,${0.8 * dataFade})`;
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(110,190,255,${0.95 * dataFade})`;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
       }
       if (visual.mean) {
         const kx = X(visual.mean.x);
