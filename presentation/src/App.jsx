@@ -591,7 +591,8 @@ function Plot({ dataset, state, visualRef, clearStartedAt, coordinateRevealStart
 
       // The active question's coordinate labels come directly from PostgreSQL.
       ctx.fillStyle = `rgba(255,255,255,${0.88 * fade * introAlpha})`;
-      const axisLabelFontSize = 20;
+      // Match the question's CSS clamp(12px, 1.1vw, 16px).
+      const axisLabelFontSize = clamp(w * 0.011, 12, 16);
       const axisLabelOffset = axisLabelFontSize + 10;
       ctx.font = `500 ${axisLabelFontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       const xEndpoints = dataset?.axisEndpoints?.x;
